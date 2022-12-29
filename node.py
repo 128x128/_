@@ -8,42 +8,36 @@ class Variable:
 	def __init__(self): self._ = None
 	def __str__(self): return f"{self._.id} = {self.__repr__()}" 
 	def __repr__(self): x=f"{format(self._.data,'.4f')}"; return " "+x if self._.data>0 else x;
-	def __add__(x, y): return Node.new(data=x._.data+y._.data, type=Variable())
+	def __add__(x, y): return Node.new(id=f"({x._.id} + {y._.id})", type=Variable(), data=x._.data + y._.data).apply((x, y))
 
 class Node:
 
-	def __init__(self, id="Variable", data=None, type=None, fn=None):
+	def __init__(self, id="Variable", data=None, type=None):
 		self.id   = id
 		self.data = data
 		self.type = type
-		self.fn   = fn
+		self.fn   = None
 
-	def new(id=None, data=None, type=None): n=Node(id=id, data=data, type=type); n.type._=n; return n
-	def link(): 
+	def label(self, name): self.id = name; return self
+	def new(id=None, data=None, type=None): n=Node(id=id, data=data, type=type); n.type._ = n; return n
+	def apply(self, x): self.fn = Node.Function(x, self); return self
 
 	def rand(): return Node.Variable(random.uniform(-1, 1))
 	def zero(): return Node.Variable(0)
 	def one(): return Node.Variable(1)
 
 	def Variable(data): return Node.new(id="Variable", data=data, type=Variable())
+	def Function(x, y): return Node.new(id="Function", data=[x, y], type=Function())
 	def Tensor(*shape): return Node.new(id="Tensor", data=[Node.rand() for _ in range(math.prod(shape))], type=Tensor(shape))
-	def Binary(x, y): return Node.new(id="Binary", type=Binary(Binary.add, x, y, z))
 
 	def __str__(self): return self.type.__str__()
 	def __repr__(self): return self.type.__repr__()
 
-	def __add__(x, y): return Node.new(id=f"{x.id} + {y.id}", fn=Node.Binary(x, y), type=(x.type + y.type))
+	def __add__(a, b): return a.type + b.type
 
-# class Function:
-	# def __init__(self, x, y, out, type): self.type = type; self.x = x; self.y = y; self.out = out
-	# def apply(self): 
-
-class Unary:
-	def __init__(self, _, x, out): self.x = x; self.y = y; self.out = out
-
-class Binary:
-	def __init__(self, _, x, y, out): self.x = x; self.y = y; self.out = out
-	def add(x, y, out): out._.data = x._.data + y._.data
+class Function:
+	def __init__(self): self._ = None;
+	def __str__(self): return f"{self._.id}: {self._.data[0]} -> {self._.data[1]}" 
 
 class Tensor: 
 	def __init__(self, shape): self._ = None; self.shape = shape 
@@ -69,7 +63,7 @@ class Tensor:
 
 # x = Node.Tensor(2, 3)
 # print(x)
-x = Node.rand()  
-y = Node.rand()  
+x = Node.rand().label("x")
+y = Node.rand().label("y")  
 z = x + y
-print(z)
+print(z.fn)
