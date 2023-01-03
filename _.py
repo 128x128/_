@@ -24,7 +24,7 @@ class Node:
 	def push(self, t, e): temp = list(t); temp.append(e); return tuple(temp)
 
 	# ops
-	def __neg__(x, y):     return x.neg()
+	def __neg__(x):        return x.neg()
 	def __add__(x, y):     return x.add(y)
 	def __sub__(x, y):     return x.sub(y)
 	def __mul__(x, y):     return x.mul(y) 
@@ -35,6 +35,8 @@ class Function(Node):
 	def __init__(self, *fxn, op=None): self.data = fxn; self.op = op
 	@property
 	def ret(self): return self.data[-1]
+	@property
+	def name(self): return f"\033[96m{self.op.__name__}\033[0m"
 	def apply(self, ret): 
 		self.data = self.push(self.data, ret) 
 		self.ret.ctx = self
@@ -44,8 +46,13 @@ class Function(Node):
 	def __call__(self): 
 		self.op(self.data)
 		# print(self.__repr__())
-	def __str__(self): return f"{self.__repr__()}: {self.data}"
-	def __repr__(self): return f"\033[96m{self.op.__name__}\033[0m() -> {self.data[-1]}"
+	
+	def __str__(self): 
+		if (len(self.data)==2): return f"{self.name} ( {self.data[0].id} ) -> {self.data[1].id}"
+		if (len(self.data)==3): return f"{self.name} ( {self.data[0].id} {self.data[1].id} ) -> {self.data[2].id}"
+	def __repr__(self): 
+		if (len(self.data)==2): return f"{self.name}( x={self.data[0].id} ):\n{self.data[0]} \n= {self.data[1]}\n"
+		if (len(self.data)==3): return f"{self.name}( x={self.data[0].id}, y={self.data[1].id} ):\n{self.data[0]}, \n{self.data[1]} \n= {self.data[2]}\n"
 
 class Variable(Node):
 	def __init__(self, data=0): self.data = data; self.type = Variable
@@ -89,7 +96,7 @@ class Variable(Node):
 	def cmean(_): _[-1].data=statistics.mean([x.data for x in _[0].data])
 
 class Tensor(Node):
-	def __init__(self, shape, data=None): self.data = data; self.shape = self.reshape(shape)
+	def __init__(self, shape, data=None): self.data = data; self.shape = self.reshape(shape); 
 
 	# initializers
 	@staticmethod
@@ -116,15 +123,13 @@ class Tensor(Node):
 	def nvec(self): return math.prod(self.shape[0:-1])
 	def mxn(self): return self.shape[-2]*self.shape[-1]
 	def idx(self, *i): return i if isinstance(i, int) else sum([i[-(_+1)]*self.stride[-(_+1)] for _ in range(len(i))])
-	def inverseidx(self, i:int): 
+	def inverseidx(self, i:int):
 		idx = []
 		for s in self.stride:
 			r=i%s; d=i-r
 			idx.append(int(d/s))
 			i=r
 		return tuple(idx)
-			
-			  
 
 	def matidx(self, i:int): return self.mxn()*i
 	def vec(self, i:int): return [self.data[_+i*self.shape[-1]] for _ in range(self.shape[-1])]
@@ -146,11 +151,14 @@ class Tensor(Node):
 	@property
 	def fn(self): return [_.ctx for _ in self.data]
 	@property
+	def fnstr(self): return "\n\n".join([_.ctx.__repr__() for _ in self.data])
+	@property
 	def size(self): return len(self.data)
 	@property
 	def rank(self): return len(self.shape)
-
-	def relabel(self): return  
+	def relabel(self):
+		for _ in range(self.size):
+			self.data[_].id = f"{self.id}{list(self.inverseidx(_))}:[{_}]"
 
 	# tensor compute ops
 	def cast(self, data):
@@ -180,6 +188,7 @@ class Tensor(Node):
 		for i in range(x.shape[-2]):
 			for j in range(y.shape[-1]):
 				T = Tensor.fill(y.shape[-2], 1);
+				T.id = f"matmulKernal{[i, j]}"
 				T.cast([v[0]*v[1] for v in zip(x.matrow(_, i), y.matcol(_, j))])
 				if len(self.shape)==2: self.data[self.idx(i,j)] = T.sum()  
 				else: self.data[self.idx(_,i,j)] = T.sum() 
@@ -196,10 +205,13 @@ class Tensor(Node):
 
 
 x = Tensor.randn(10, 5)
+y = Tensor.randn(5, 3)
 
-
+z = x * y
 x.id = "x"
-
-#print(x)
-#print(y)
-print(x.inverseidx(36))
+y.id = "y"
+z.id = "z"
+z.relabel()
+print(z.fnstr)
+print(z)
+#print(x.__uid__())
