@@ -2,11 +2,7 @@
 import math, random, statistics
 from typing import List, Tuple, Callable, Optional
 
-# from rich import print, pretty
-
 random.seed(1337) 
-
-STACK = []
 
 class Node:
 	id   = None
@@ -47,10 +43,10 @@ class Function(Node):
 		self.op(self.data)
 		# print(self.__repr__())
 	
-	def __str__(self): 
+	def __repr__(self): 
 		if (len(self.data)==2): return f"{self.name} ( {self.data[0].id} ) -> {self.data[1].id}"
 		if (len(self.data)==3): return f"{self.name} ( {self.data[0].id} {self.data[1].id} ) -> {self.data[2].id}"
-	def __repr__(self): 
+	def __str__(self): 
 		if (len(self.data)==2): return f"{self.name}( x={self.data[0].id} ):\n{self.data[0]} \n= {self.data[1]}\n"
 		if (len(self.data)==3): return f"{self.name}( x={self.data[0].id}, y={self.data[1].id} ):\n{self.data[0]}, \n{self.data[1]} \n= {self.data[2]}\n"
 
@@ -94,6 +90,9 @@ class Variable(Node):
 	def cmin(_): _[-1].data=min([x.data for x in _[0].data])
 	def cavg(_): _[-1].data=statistics.avg([x.data for x in _[0].data])
 	def cmean(_): _[-1].data=statistics.mean([x.data for x in _[0].data])
+
+
+	
 
 class Tensor(Node):
 	def __init__(self, shape, data=None): self.data = data; self.shape = self.reshape(shape); 
@@ -151,7 +150,7 @@ class Tensor(Node):
 	@property
 	def fn(self): return [_.ctx for _ in self.data]
 	@property
-	def fnstr(self): return "\n\n".join([_.ctx.__repr__() for _ in self.data])
+	def fnstr(self): return "\n\n".join([_.ctx.__str__() for _ in self.data])
 	@property
 	def size(self): return len(self.data)
 	@property
@@ -203,15 +202,39 @@ class Tensor(Node):
 	def avg(self): return Function(self, op=Variable.cavg).apply(Variable())
 
 
+class Printer(Node):
+
+	def __init__(self, data=None):
+		self.data = data
+
+	@staticmethod
+	def Token(): return Printer()
+	@staticmethod
+	def Line(): return Printer()
+	@staticmethod
+	def Buffer(): return Printer()
+	@staticmethod
+	def Tree(): return Printer()
+
+	# color ops
+	def red(self, buffer): return f"\033[92m{buffer}\033[0m"
+	def green(self, buffer): return f"\033[91m{buffer}\033[0m"
+	def blue(self, buffer): return f"\033[94m{buffer}\033[0m"
+
+	def __str__(self): return ""
+
+	def add_branch(x, i:int): 
+		if 0==i: return f"┌ {x[i]}\n"
+		if len(x)-1==i: return f"└ {x[i]}\n"
+		return f"├ {x[i]}\n"
+	def branch(x): return [Printer.add_branch(x, _) for _ in range(len(x))]
+
 
 x = Tensor.randn(10, 5)
 y = Tensor.randn(5, 3)
-
 z = x * y
 x.id = "x"
 y.id = "y"
 z.id = "z"
-z.relabel()
-print(z.fnstr)
-print(z)
-#print(x.__uid__())
+
+print("".join(Printer.branch(x.data)))
