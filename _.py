@@ -95,21 +95,23 @@ class Variable(Node):
 	
 
 class Tensor(Node):
-	def __init__(self, shape, data=None): self.data = data; self.shape = self.reshape(shape); 
+	def __init__(self, shape, data=None, dtype=None): self.data = data; self.shape = self.reshape(shape); self.dtype=dtype
 
 	# initializers
 	@staticmethod
-	def empty(*shape): return Tensor(shape, data=[])
+	def empty(*shape): return Tensor(shape, data=[], dtype=None)
 	@staticmethod
-	def fill(*shape):  return Tensor(shape, data=[None  for _ in range(math.prod(shape))])
+	def fill(*shape):  return Tensor(shape, data=[None  for _ in range(math.prod(shape))], dtype=Variable)
 	@staticmethod
-	def ones(*shape):  return Tensor(shape, data=[Variable(1) for _ in range(math.prod(shape))])
+	def ones(*shape):  return Tensor(shape, data=[Variable(1) for _ in range(math.prod(shape))], dtype=Variable)
 	@staticmethod
-	def zeros(*shape): return Tensor(shape, data=[Variable(0) for _ in range(math.prod(shape))])
+	def zeros(*shape): return Tensor(shape, data=[Variable(0) for _ in range(math.prod(shape))], dtype=Variable)
 	@staticmethod
-	def randn(*shape): return Tensor(shape, data=[Variable(random.uniform(-1, 1)) for _ in range(math.prod(shape))])
+	def randn(*shape): return Tensor(shape, data=[Variable(random.uniform(-1, 1)) for _ in range(math.prod(shape))], dtype=Variable)
 	@staticmethod
-	def arange(*shape): return Tensor(shape, data=[Variable(_+1) for _ in range(math.prod(shape))])
+	def arange(*shape): return Tensor(shape, data=[Variable(_+1) for _ in range(math.prod(shape))], dtype=Variable)
+	@staticmethod
+	def strbuff(*shape): return Tensor(shape, data=["+" for _ in range(math.prod(shape))], dtype=str).inter_replace(shape[1], "\n")
 
 	# tensor shape ops
 	def restride(self): return tuple([math.prod(self.shape[_+1:len(self.shape)]) for _ in range(self.rank)])
@@ -122,13 +124,7 @@ class Tensor(Node):
 	def nvec(self): return math.prod(self.shape[0:-1])
 	def mxn(self): return self.shape[-2]*self.shape[-1]
 	def idx(self, *i): return i if isinstance(i, int) else sum([i[-(_+1)]*self.stride[-(_+1)] for _ in range(len(i))])
-	def inverseidx(self, i:int):
-		idx = []
-		for s in self.stride:
-			r=i%s; d=i-r
-			idx.append(int(d/s))
-			i=r
-		return tuple(idx)
+	def invidx(self, i:int): idx=[]; exec("for s in self.stride: r=i%s;d=i-r;idx.append(int(d/s));i=r"); return tuple(idx)
 
 	def matidx(self, i:int): return self.mxn()*i
 	def vec(self, i:int): return [self.data[_+i*self.shape[-1]] for _ in range(self.shape[-1])]
@@ -142,7 +138,9 @@ class Tensor(Node):
 	def matuid(self, i:int): return "\n".join( [self.vecuid(i*self.shape[-2]+_) for _ in range(self.shape[-2])])
 
 	def __uid__(self): return self.format(list("\n\n".join([self.matuid(_) for _ in range(self.nmat)])+"\n"))
-	def __str__(self): return self.format(list("\n\n".join([self.matstr(_) for _ in range(self.nmat)])+"\n"))
+	def __str__(self): 
+		if self.dtype==str: return "".join([_ for _ in self.data])
+		if self.dtype==Variable: return self.format(list("\n\n".join([self.matstr(_) for _ in range(self.nmat)])+"\n"))
 	def __repr__(self): return self.id + str(self.shape);
 	def __getitem__(self, i): return self.data[self.idx(i)]
 
@@ -201,40 +199,71 @@ class Tensor(Node):
 	def mean(self): return Function(self, op=Variable.cmean).apply(Variable())
 	def avg(self): return Function(self, op=Variable.cavg).apply(Variable())
 
+	# str tenor ops
+	def red(self, buffer:str): return f"\033[92m{buffer}\033[0m"
+	def green(self, buffer:str): return f"\033[91m{buffer}\033[0m"
+	def blue(self, buffer:str): return f"\033[94m{buffer}\033[0m"
+	
+	def charbuff(self, n:int): return [" " for _ in range(n)]
+	def replace_char(self, _:int, char:str): self.data[_]=char; return self
+	def condition(self, cond:str, op:str): print(0) if exec(cond) else None
+		# exec(op) if exec(cond) else None 
+	def inter_replace(self, n:int, token:str): s=[self.condition(f"{_}%{n}==0", f"self.replace_char({_}, {token})") for _ in range(self.size)];return self
 
-class Printer(Node):
+	def merge(x, y):	
+		data = [x.data[_] + y.data[_] for _ in range(min(x.m, y.m))]
+		return Buffer(max(x.m, y.m), x.n+y.n, data=data)
 
-	def __init__(self, data=None):
-		self.data = data
+	def _indent(self, _:list): _.insert(0, 'x'); return _.pop()
+	def op(self, fn): return [fn(_) for _ in self.data]
+	def indent(self, n:int): return [self.op(self._indent) for _ in range(n)]   
 
-	@staticmethod
-	def Token(): return Printer()
-	@staticmethod
-	def Line(): return Printer()
-	@staticmethod
-	def Buffer(): return Printer()
-	@staticmethod
-	def Tree(): return Printer()
-
-	# color ops
-	def red(self, buffer): return f"\033[92m{buffer}\033[0m"
-	def green(self, buffer): return f"\033[91m{buffer}\033[0m"
-	def blue(self, buffer): return f"\033[94m{buffer}\033[0m"
-
-	def __str__(self): return ""
-
-	def add_branch(x, i:int): 
-		if 0==i: return f"┌ {x[i]}\n"
-		if len(x)-1==i: return f"└ {x[i]}\n"
-		return f"├ {x[i]}\n"
-	def branch(x): return [Printer.add_branch(x, _) for _ in range(len(x))]
+	def _branch(self, _:list): _.insert(0, '├ '); _.pop()
+	def _corner(self, _:list): x[0]="┌"; x[-1]="└"; return x
+	def branch(self, i, j): return [self._branch() for _ in range(i, j)]
 
 
-x = Tensor.randn(10, 5)
-y = Tensor.randn(5, 3)
-z = x * y
-x.id = "x"
-y.id = "y"
-z.id = "z"
+x = Tensor.strbuff(10, 32)
+print(x)
 
-print("".join(Printer.branch(x.data)))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
