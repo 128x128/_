@@ -3,8 +3,11 @@
 
 
 int main(int argc, char **argv) { 
-    _ x;
-    i32 v;
-    /*printf("%d\n",(int)i32);*/
+    _* x = alloc(NULL, _i32_);
+    i32 y;
+    push(x, (void*)&y);
+    push(x, (void*)&y);
+    push(x, (void*)&y);
+    show(x);
     return 0; 
 }
