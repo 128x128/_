@@ -26,8 +26,3 @@ ifneq ("$(wildcard $(BUILD_DIR))","")
 	rm -rf $(BUILD_DIR)
 endif
 
-push: $(clean) # git push
-	git add .
-	git commit -m "$(m)" 
-	
-
