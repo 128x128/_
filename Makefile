@@ -7,22 +7,27 @@ HEADERS := $(wildcard include/*.h)
 SRC := $(wildcard src/*.c)
 
 TARGET := main.c
+ARGS := hello
 DEPENDENIES := null 
-OUT := out
+LOG ?=  _.log
 
 all: $(HEADERS) $(SRC)
 
-mkbuild: # mkdir build
-ifeq ("$(wildcard $(BUILD_DIR))","") 
+%: # compile + run %.c
+ifeq ("$(wildcard $(BUILD_DIR))","")  # mkdir build
 	mkdir $(BUILD_DIR)
 endif
-
-%: $(mkbuild) # compile + run %.c
 	$(CC) src/$@.c $(CFLAGS) -o $(BUILD_DIR)/$@
-	./$(BUILD_DIR)/$@
+	#./$(BUILD_DIR)/$@ > $(LOG)
+	@echo "\n\033[92mExecuting...\033[0m"
+	./$(BUILD_DIR)/$@ $(ARGS)
+	@echo "\n\033[92mDone\033[0m"
+	make clean
 
-clean: # rm  build dir
-ifneq ("$(wildcard $(BUILD_DIR))","") 
+clean: 
+ifneq ("$(wildcard $(BUILD_DIR))","") # rm  build dir
 	rm -rf $(BUILD_DIR)
 endif
-
+ifneq ("$(wildcard $(wildcard *.log))","") # rm  build dir
+	rm $(wildcard *.log) # rm logs
+endif
