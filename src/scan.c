@@ -3,11 +3,6 @@
 
 
 int main(int argc, char **argv) { 
-    _* x = alloc(NULL, _i32_);
-    i32 y;
-    push(x, (void*)&y);
-    push(x, (void*)&y);
-    push(x, (void*)&y);
-    show(x);
+    char c = qckgetchar();
     return 0; 
 }
