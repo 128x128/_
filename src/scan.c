@@ -3,6 +3,10 @@
 
 
 int main(int argc, char **argv) { 
-    char c = qckgetchar();
+    /*char c = qckgetchar();*/
+    node* a = nalloc(I32);
+    node* b = nalloc(I32);
+    undirect(a,b);
+    Node.print(a);
     return 0; 
 }
