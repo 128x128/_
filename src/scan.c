@@ -7,6 +7,7 @@ int main(int argc, char **argv) {
     node* a = nalloc(I32);
     node* b = nalloc(I32);
     undirect(a,b);
-    Node.print(a);
+    printn(a);
+    printn(b);
     return 0; 
 }
