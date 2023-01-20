@@ -1,6 +1,8 @@
 #ifndef UTIL_H
 #define UTIL_H
 
+#include "common.h"
+
 char qckgetchar() { 
     char buf = 0;
     struct termios old = {0};
@@ -20,5 +22,8 @@ char qckgetchar() {
 	    perror ("tcsetattr ~ICANON");
     return (buf);
 }
+
+void prtdec(int _) {printf("%d", _);}
+void prtstr(const char* _) {printf("%s", _);}
 
 #endif

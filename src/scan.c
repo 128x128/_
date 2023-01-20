@@ -1,13 +1,11 @@
-#include "../include/core.h"
-#include "../include/lexer.h"
+#include "../include/node.h"
+#include "../include/recognizer.h"
 
-
-int main(int argc, char **argv) { 
-    /*char c = qckgetchar();*/
-    node* a = nalloc(I32);
-    node* b = nalloc(I32);
-    undirect(a,b);
-    printn(a);
-    printn(b);
+int main(int argc, char **argv) {
+    /*rexp* r = recognize("n");*/
+    /*printf("%d\n", match(r, "n"));*/
+    buffer* s = salloc("hello");
+    /*bhexdump(s);*/
+    /*printb(s);*/
     return 0; 
 }
