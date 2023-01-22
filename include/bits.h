@@ -7,6 +7,7 @@ void hexdump(void* addr, int len) {
     int perLine = 16; int i;
     unsigned char buff[perLine+1];
     const unsigned char * pc = (const unsigned char *)addr;
+    printf("\033[91m%p\033[0m ", addr);
     for (i = 0; i < len; i++) {
 	printf ("\033[94m %02x \033[0m", pc[i]);
 	if ((pc[i] < 0x20) || (pc[i] > 0x7e))

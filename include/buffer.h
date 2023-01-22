@@ -15,8 +15,8 @@ typedef struct buffer {
 // alloc buffer
 buffer* balloc(type _) {
     buffer* b = (buffer*)malloc(sizeof(buffer));
-    b->data = malloc(_->size);
-    b->type = _; b->bytes = _->size;
+    b->data = malloc(typemap(_)->size);
+    b->type = _; b->bytes = typemap(_)->size;
     b->used = 0; b->size = 0;
     return b;
 }
@@ -32,31 +32,45 @@ void brelloc(buffer* _) {
     _->data = __;
 }
 
-// buffer ops
-void* bidx(buffer* _, int i) {
-    return _->data + (i * typemap(_->type)->size);
-}
+// init
 
+
+
+// buffer ops
+
+size_t tsize(buffer* _) {
+    return typemap(_->type)->size;
+}
+void* end(buffer* _) {
+    return _->data+_->used;
+}
+void* offset(buffer* _, int i) {
+    return _->data + (i * tsize(_));
+}
 void bpush(buffer* _, void* __) {
     if (_->used == _->bytes) brelloc(_);
-    memcpy(_->data+_->used, __, _->type->size);
-    _->size++; _->used += _->type->size;
+    memcpy(_->data+_->used, __, tsize(_));
+    _->size++; _->used += tsize(_);
 }
 
-void bpop(buffer* _) {_->size--; _->used -= _->type->size;}
-
+void bpop(buffer* _) {
+    memset(end(_)-tsize(_), 0x00, tsize(_));
+    _->size--; _->used -= tsize(_);
+}
 
 // string buffer ops
-buffer* strbuffer(const char* _) {
-   buffer* b = balloc(&String);
+buffer* string(const char* _) {
+   buffer* b = balloc(CHAR);
    while(*_) {bpush(b, (void*)_++);}
    return b;
 }
 
-void bconcat(buffer* _, const char* __) {
-   while(*__) {bpush(_, (void*)__++);}
+void concat(buffer* x, buffer* y) {
+    char* c = (char*)y->data;
+    while(*c) {
+	bpush(x, (void*)c++);
+    }
 }
-
 
 // buffer printers
 void bhexdump(buffer* _) {
@@ -64,12 +78,17 @@ void bhexdump(buffer* _) {
 }
 
 void printb(buffer* _) {
-    printf("Buffer: dtype=%s ",_->type->str); 
-    printf("using [%zu bytes out of %zu bytes]\n",_->used,_->bytes);
-    for (int i=0; i<_->used;i+=_->type->size) {
-	printf("\t%p", _->data+i); 
-	hexdump(_->data+i, _->type->size);
+    printf("\033[93mBuffer: type=%s ",typemap(_->type)->str); 
+    printf("\033[91m[%zu bytes out of %zu bytes]\033[0m\n",_->used,_->bytes);
+    for (int i=0; i<_->used;i+=tsize(_)) {
+	printf("\t"); 
+	hexdump(_->data+i, tsize(_));
     }
 }
+
+
+//struct buffer_t {
+    //buffer* ();
+//}
 
 #endif

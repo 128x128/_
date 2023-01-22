@@ -12,12 +12,13 @@ typedef struct node {
     buffer* out;
 } node;
 
+// alloc ops
 node* nalloc(type _, void* __) {
     node* n = (node*)malloc(sizeof(node));
     n->data = __;
     n->type = _;
-    n->in = balloc(&Pointer);
-    n->out = balloc(&Pointer);
+    n->in = balloc(NODE);
+    n->out = balloc(NODE);
     return n;
 }
 
@@ -26,6 +27,11 @@ void ndelloc(node* _) {
     bdelloc(_->in); bdelloc(_->out);
 }
 
+node* nstring(const char* _) {
+    return  nalloc(STRING, string(_));
+}
+
+// edge ops
 void direct(node* x, node* y) {
     void** _x = (void**)&x;
     void** _y = (void**)&y;
@@ -38,19 +44,38 @@ void undirect(node* x, node* y) {
 }
 
 void nhexdump(node* _) {
-    switch(_->type) {
-	case BUFFER: bhexdump(_->data); break;
-	default: break;
-    }
+    bhexdump(_->data);
+    //switch(_->type) {
+	//case BUFFER: bhexdump(_->data); break;
+	//default: break;
+    //}
 }
 
-node* nunion(buffer* _) {
-    buffer* b = balloc(&Buffer);
-    for (int i=0;i<_->size;i++) {
-	bconcat(b, bidx(_, i));
-	bconcat(b, "|");
+
+// regex ops
+node* regex_union(buffer* _) {
+    buffer* b = string("(");
+    for (int i = 0; i < _->size; i++) {
+	node* n = (node*)offset(_, i);
+	concat(b, (buffer*)n->data);
+	bpush(b, &"|");
     }
-    bhexdump(b);
-    //return nalloc(BUFF, data);
+    bpop(b); bpush(b, &")");
+    return nalloc(STRING, b);
 }
+
+node* regex_concat(node* x, node* y) {
+    buffer* b = string("");
+    concat(b, x->data);
+    concat(b, y->data);
+    return nalloc(STRING, b);
+}
+
+node* regex_closure(node* _) {
+    buffer* b = string("");
+    concat(b, _->data);
+    bpush(b, &"*");
+    return nalloc(STRING, b);
+}
+
 #endif
