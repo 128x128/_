@@ -2,10 +2,10 @@
 #include "../include/recognizer.h"
 
 int main(int argc, char **argv) {
-    /*rexp* r = recognize("n");*/
-    /*printf("%d\n", match(r, "n"));*/
-    buffer* s = salloc("hello");
-    /*bhexdump(s);*/
-    /*printb(s);*/
+    /*node* a = nalloc(BUFF, strbuffer("hello"));*/
+    /*node* b = nalloc(BUFF, strbuffer("dsdfs"));*/
+    /*node* c = nunion(a, b);*/
+    /*nhexdump(a);*/
+    strbuffer();
     return 0; 
 }
