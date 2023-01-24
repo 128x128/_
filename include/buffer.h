@@ -32,10 +32,6 @@ void brelloc(buffer* _) {
     _->data = __;
 }
 
-// init
-
-
-
 // buffer ops
 
 size_t tsize(buffer* _) {
@@ -87,8 +83,16 @@ void printb(buffer* _) {
 }
 
 
-//struct buffer_t {
-    //buffer* ();
-//}
+struct buffer_t {
+    buffer* (*init)(type);
+    void (*push)(buffer*, void*);
+    void (*pop)(buffer*);
+};
+
+struct buffer_t Buffer = {
+    &balloc,
+    &bpush,
+    &bpop,
+};
 
 #endif

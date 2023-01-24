@@ -1,12 +1,8 @@
-#include "../include/node.h"
-#include "../include/recognizer.h"
+/*#include "../include/node.h"*/
+#include "../include/monolith.h"
 
 int main(int argc, char **argv) {
-    buffer* _ = balloc(NODE);
-    bpush(_, nstring("1"));
-    bpush(_, nstring("2"));
-    bpush(_, nstring("3"));
-    node* v = regex_union(_);
-    printb(v->data);
+    uint32_t x = 0xFF;
+    prtbits(&x, 32);
     return 0; 
 }

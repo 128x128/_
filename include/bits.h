@@ -19,4 +19,14 @@ void hexdump(void* addr, int len) {
     printf ("\033[92m  %s\n\033[0m", buff);
 }
 
+void printu8(void* _) {printf("%d", *(uint8_t*)_);}
+void printi8(void* _) {printf("%d", *(int8_t*)_);}
+void printu16(void* _) {printf("%d", *(uint16_t*)_);}
+void printi16(void* _) {printf("%d", *(int16_t*)_);}
+void printu32(void* _) {printf("%d", *(uint32_t*)_);}
+void printi32(void* _) {printf("%d", *(int32_t*)_);}
+void printu64(void* _) {printf("%llu", *(uint64_t*)_);}
+void printi64(void* _) {printf("%lld", *(int64_t*)_);}
+void printstr(void* _) {printf("%s", (char*)_);}
+void printptr(void* _) {printf("\033[91m%p\033[0m", _);}
 #endif

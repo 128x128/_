@@ -24,6 +24,7 @@ typedef enum type {
     POINTER,
     BUFFER,
     NODE,
+    LIST,
 } type;
 
 typedef struct dtype {
@@ -34,16 +35,6 @@ typedef struct dtype {
     void* (*init)(struct dtype);
 } dtype;
 
-void printu8(void* _) {printf("%d", *(uint8_t*)_);}
-void printi8(void* _) {printf("%d", *(int8_t*)_);}
-void printu16(void* _) {printf("%d", *(uint16_t*)_);}
-void printi16(void* _) {printf("%d", *(int16_t*)_);}
-void printu32(void* _) {printf("%d", *(uint32_t*)_);}
-void printi32(void* _) {printf("%d", *(int32_t*)_);}
-void printu64(void* _) {printf("%llu", *(uint64_t*)_);}
-void printi64(void* _) {printf("%lld", *(int64_t*)_);}
-void printstr(void* _) {printf("%s", (char*)_);}
-void printptr(void* _) {printf("%p", _);}
 
 dtype dt_uint8   = {U8,      BYTE_SIZE, "uint8",  NULL}; 
 dtype dt_int8    = {I8,      BYTE_SIZE, "int8",   NULL}; 
@@ -61,6 +52,7 @@ dtype dt_string  = {STRING,  BYTE_SIZE, "str",    NULL};
 dtype dt_pointer = {POINTER, QUAD_SIZE, "ptr",    NULL}; 
 dtype dt_buffer  = {BUFFER,  QUAD_SIZE, "buffer", NULL}; 
 dtype dt_node    = {NODE,    QUAD_SIZE, "node",   NULL}; 
+dtype dt_list    = {LIST,    QUAD_SIZE, "list",   NULL}; 
 
 
 dtype* typemap(type _) {
@@ -81,6 +73,7 @@ dtype* typemap(type _) {
 	case POINTER: return &dt_pointer;
 	case BUFFER:  return &dt_buffer;
 	case NODE:    return &dt_node;
+	case LIST:    return &dt_list;
 	default: NULL;
     }
 } 

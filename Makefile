@@ -18,7 +18,6 @@ ifeq ("$(wildcard $(BUILD_DIR))","")  # mkdir build
 	mkdir $(BUILD_DIR)
 endif
 	$(CC) src/$@.c $(CFLAGS) -o $(BUILD_DIR)/$@
-	#./$(BUILD_DIR)/$@ > $(LOG)
 	@echo "\n\033[92mExecuting...\033[0m"
 	./$(BUILD_DIR)/$@ $(ARGS)
 	@echo "\n\033[92mDone\033[0m"
