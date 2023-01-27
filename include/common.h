@@ -11,6 +11,7 @@
 #include <stdbool.h>
 #include <termios.h>
 #include <regex.h>
+#include <stdarg.h>
 
 #include "bits.h"
 #include "util.h"

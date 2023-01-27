@@ -3,7 +3,7 @@
 
 #include "common.h"
 
-void hexdump(void* addr, int len) {
+void hd(void* addr, int len) {
     int perLine = 16; int i;
     unsigned char buff[perLine+1];
     const unsigned char * pc = (const unsigned char *)addr;
@@ -16,7 +16,7 @@ void hexdump(void* addr, int len) {
 	    buff[i % perLine] = pc[i];
 	buff[(i % perLine) + 1] = '\0';
     }
-    printf ("\033[92m  %s\n\033[0m", buff);
+    printf ("\033[92m  %s\033[0m", buff);
 }
 
 void printu8(void* _) {printf("%d", *(uint8_t*)_);}
