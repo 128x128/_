@@ -4,6 +4,18 @@
 #include "common.h"
 #include "list.h"
 
+typedef int key;
+
+typedef struct var {
+    key id;
+    void* data;
+} var;
+
+typedef struct method {
+    key id;
+    void* (*fn)(void*);
+} var;
+
 typedef struct object {
     list* vars;
     list* methods;
@@ -18,7 +30,11 @@ object* initObject() {
     return o;
 }
 
+void add(object* o, const char* name) {
+}
+
 void pushVar(object* o) {
+    push(o->vars, (var*)malloc(sizeof(var)))
 }
 void pushMethod(object* o) {
 }

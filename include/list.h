@@ -18,7 +18,7 @@ list* initList() {
 }
 // property ops
 bool isEmpty(list* l) {
-    return l->size==0 ? false : true;
+    return (l->size==0) ? true : false;
 }
 // add ops
 void addEmpty(list* l, item* i) {
@@ -62,6 +62,7 @@ item* pop(list* l) {
     item* t = l->tail;
     if (t->prev != NULL) t->prev->next = NULL;
     l->tail = t->prev;
+    l->size--;
     return t;
 }
 item* dequeue(list* l) {
@@ -70,6 +71,7 @@ item* dequeue(list* l) {
     item* h = l->head;
     if (h->next != NULL) h->next->prev = NULL;
     l->head = h->next;
+    l->size--;
     return h;
 }
 

@@ -1,8 +1,9 @@
 /*#include "../include/node.h"*/
-#include "../include/list.h"
+#include "../include/monolith.h"
+#include "../include/hash.h"
 
 int main(int argc, char **argv) {
-    list* l = initList();
-    printf("%d\n", isEmpty(l));
+    if (argc == 2) runFile(argv[1]);
+    else prompt();
     return 0; 
 }
