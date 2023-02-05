@@ -24,7 +24,6 @@ buffer* balloc(type _) {
 void bdelloc(buffer* _) {
     if (_->data) free(_->data); free(_);
 }
-
 void brelloc(buffer* _) {
     void* __ = malloc(_->bytes*2);
     memcpy(__, _->data, _->bytes);
@@ -33,7 +32,6 @@ void brelloc(buffer* _) {
 }
 
 // buffer ops
-
 size_t tsize(buffer* _) {
     return typemap(_->type)->size;
 }
@@ -48,31 +46,48 @@ void bpush(buffer* _, void* __) {
     memcpy(_->data+_->used, __, tsize(_));
     _->size++; _->used += tsize(_);
 }
-
 void bpop(buffer* _) {
     memset(end(_)-tsize(_), 0x00, tsize(_));
     _->size--; _->used -= tsize(_);
 }
-
 // string buffer ops
 buffer* string(const char* _) {
    buffer* b = balloc(CHAR);
    while(*_) {bpush(b, (void*)_++);}
    return b;
 }
-
 void concat(buffer* x, buffer* y) {
     char* c = (char*)y->data;
     while(*c) {
 	bpush(x, (void*)c++);
     }
 }
-
+// regex ops
+buffer* regex_union(buffer* _) {
+    buffer* b = string("(");
+    for (int i = 0; i < _->size; i++) {
+	concat(b, (buffer*)n->data);
+	bpush(b, &"|");
+    }
+    bpop(b); bpush(b, &")");
+    return b;
+}
+buffer* regex_concat(node* x, node* y) {
+    buffer* b = string("");
+    concat(b, x->data);
+    concat(b, y->data);
+    return b;
+}
+buffer* regex_closure(node* _) {
+    buffer* b = string("");
+    concat(b, _->data);
+    bpush(b, &"*");
+    return b;
+}
 // buffer printers
 void bhexdump(buffer* _) {
     hexdump(_->data, _->bytes);
 }
-
 void printb(buffer* _) {
     printf("\033[93mBuffer: type=%s ",typemap(_->type)->str); 
     printf("\033[91m[%zu bytes out of %zu bytes]\033[0m\n",_->used,_->bytes);
@@ -82,17 +97,5 @@ void printb(buffer* _) {
     }
 }
 
-
-struct buffer_t {
-    buffer* (*init)(type);
-    void (*push)(buffer*, void*);
-    void (*pop)(buffer*);
-};
-
-struct buffer_t Buffer = {
-    &balloc,
-    &bpush,
-    &bpop,
-};
 
 #endif

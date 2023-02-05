@@ -9,6 +9,9 @@
 // props
 #define tsize(n) typemap(n->type)->size 
 
+typedef struct buffer buffer;
+typedef struct node node;
+typedef struct list list;
 
 typedef struct buffer {
     void* data;
@@ -20,8 +23,8 @@ typedef struct buffer {
 typedef struct node {
     void* data;
     type type;
-    buffer* in;
-    buffer* out;
+    list* in;
+    list* out;
 } node;
 
 typedef struct list {
@@ -42,6 +45,7 @@ node* node_malloc(type t, void* data) {
     init_node(n, t, d);
     node* n = (node*)malloc(sizeof(node));
     n->type = t; n->data = data;
+    n->in = 
     //n->in = balloc(NODE); n->out = balloc(NODE);
     return n;
 }

@@ -2,7 +2,14 @@
 #define LIST_H
 
 #include "common.h"
-#include "item.h"
+#include "object.h"
+
+
+typedef struct item {
+    object* obj;
+    struct item* next;
+    struct item* prev;
+} item;
 
 typedef struct list {
     item* head;
@@ -10,6 +17,14 @@ typedef struct list {
     size_t size;
 } list;
 
+// init
+item* initItem(void* data) {
+    item* i = (item*)malloc(sizeof(item));
+    i->data = data;
+    i->next = NULL;
+    i->prev = NULL;
+    return i;
+}
 list* initList() {
     list* l = (list*)malloc(sizeof(list));
     l->head = NULL; l->tail = NULL;

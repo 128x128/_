@@ -21,17 +21,16 @@ typedef unsigned __int128 uint128_t;
 #define RESET "\x1B[0m"
 
 void hd(void* addr, int len) {
-    int perLine = 16; int i;
-    unsigned char buff[perLine+1];
+    unsigned char buff[len];
     const unsigned char * pc = (const unsigned char *)addr;
     printf("\033[91m%p\033[0m ", addr);
-    for (i = 0; i < len; i++) {
+    for (int i = 0; i < len; i++) {
 	printf ("\033[94m %02x \033[0m", pc[i]);
 	if ((pc[i] < 0x20) || (pc[i] > 0x7e))
-	    buff[i % perLine] = '.';
+	    buff[i] = '.';
 	else
-	    buff[i % perLine] = pc[i];
-	buff[(i % perLine) + 1] = '\0';
+	    buff[i] = pc[i];
+	buff[(i) + 1] = '\0';
     }
     printf ("\033[92m  %s\033[0m", buff);
 }

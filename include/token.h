@@ -1,39 +1,35 @@
 #ifndef TOKEN_H 
 #define TOKEN_H
 
-#include "buffer.h"
+#include "object.h"
 
-typedef enum TOKEN_TYPE {
-  // Single-character tokens.
+typedef enum TOKEN_T {
   LEFT_PAREN, RIGHT_PAREN, LEFT_BRACE, RIGHT_BRACE,
   COMMA, DOT, MINUS, PLUS, SEMICOLON, SLASH, STAR,
 
-  // One or two character tokens.
   BANG, BANG_EQUAL,
   EQUAL, EQUAL_EQUAL,
   GREATER, GREATER_EQUAL,
   LESS, LESS_EQUAL,
 
-  // Literals.
-  IDENTIFIER, STRING, NUMBER,
+  IDENTIFIER, STR, NUMBER,
 
-  // Keywords.
   AND, CLASS, ELSE, FALSE, FUN, FOR, IF, NIL, OR,
   PRINT, RETURN, SUPER, THIS, TRUE, VAR, WHILE,
 
-  EOF
-} TOKEN_TYPE;
+  ENDFILE
+} TOKEN_T;
 
 typedef struct token {
-    TOKEN_TYPE type;
-    buffer* lexeme; 
-    int row;
-    int col;
+    TOKEN_T type;
+    char* lexeme; 
+    object* literal; 
+    int line;
 } token;
 
-token* talloc(const char* lexeme) {
+token* initToken(char* lexeme) {
     token* t = (token*)malloc(sizeof(token));
-    t->lexeme = NULL;
+    t->lexeme = lexeme;
     return t; 
 }
 

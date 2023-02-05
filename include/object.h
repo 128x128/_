@@ -2,41 +2,19 @@
 #define OBJECT_H
 
 #include "common.h"
-#include "list.h"
-
-typedef int key;
-
-typedef struct var {
-    key id;
-    void* data;
-} var;
-
-typedef struct method {
-    key id;
-    void* (*fn)(void*);
-} var;
+#include "buffer.h"
 
 typedef struct object {
-    list* vars;
-    list* methods;
+    void* self;
     dtype type;
 } object;
 
-object* initObject() {
+object* initObject(void* self) {
     object* o = (object*)malloc(sizeof(object));
-    o->vars = initList();
-    o->methods = initList();
-    o->type = NULL;
+    o->self = 0;
     return o;
 }
 
-void add(object* o, const char* name) {
-}
 
-void pushVar(object* o) {
-    push(o->vars, (var*)malloc(sizeof(var)))
-}
-void pushMethod(object* o) {
-}
 
 #endif

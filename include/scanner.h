@@ -1,11 +1,16 @@
 #ifndef SCANNER_H 
 #define SCANNER_H
 
-#include "node.h"
+#include "list.h"
 
+typedef struct scanner {
+    int start;
+    int current;
+    int line;
+} scanner;
 
-void scanner(const char* _) {
-    return;
+list* scanTokens(const char* src) {
+    return NULL;
 }
 
 
