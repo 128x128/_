@@ -15,6 +15,7 @@
 #include "bits.h"
 #include "util.h"
 #include "types.h"
+#include "list.h"
 
 //#include "common.h"
 //#include "list.h"
@@ -26,24 +27,41 @@
 typedef char src;
 typedef const char filename;
 
-typedef enum mlStatus {SUCCESS=-1, RUNNING=0, ERROR=1} mlStatus;
+typedef enum mlStatus 
+{
+    SUCCESS = -1, 
+    RUNNING =  0, 
+    ERROR   =  1,
+} 
+mlStatus;
 
 #define mlSTATUS(x) (x ? RUNNING : (Monolith.status=ERROR)) 
 
 
-typedef struct monolith {
+typedef struct monolith 
+{
     mlStatus  status;
     mlStatus  (*run)     (src*);
     mlStatus  (*execute) (filename*);
     mlStatus  (*prompt)  ();
+    src*      program;
     src       promptBuffer[MAX_CHARS];
-} monolith;
+} 
+monolith;
+
+typedef struct object 
+{
+    list* self;
+    type type;
+} 
+object;
 
 mlStatus run     (src* code);
 mlStatus execute (filename* file);
 mlStatus prompt  ();
 
-monolith Monolith = {
+monolith Monolith = 
+{
     RUNNING,
     &run,
     &execute,
@@ -56,6 +74,7 @@ monolith Monolith = {
     //dfa* g = initDFA(re);
     //return NULL;
 //}
+
 void report(int line, char* where, char* msg) {
     printf("[Line: %d] Error %s :%s", line, where, msg);
 }
@@ -64,29 +83,23 @@ void error(int line, char* msg) {
 }
 // Main
 mlStatus run(src* code) { 
-    return 0;
     //list* tokens = scanTokens(src); return 0;
+    return SUCCESS;
 }
+
 mlStatus execute(filename* file) {
     FILE *f = fopen(file, "r");
     fseek(f, 0, SEEK_END);
     long n = ftell(f);
-    src* code = (src*)malloc(n+1);
     fseek(f, 0, SEEK_SET);
+    src* code = (src*)malloc(n+1);
+    Monolith.program = code;
     fread(code, n, 1, f);
     fclose(f);
     return mlSTATUS(run(code));
 }
-mlStatus runbuffer(){
-    return mlSTATUS(run(&Monolith.promptBuffer[0]));
-}
-mlStatus scan(){
-    char promptBuffer[MAX_CHARS];
-    scanf("> %s",&promptBuffer[0]);
-    //printf("%s\n",&promptBuffer[0]);
-    return 0;}
-    //return runbuffer();}
-mlStatus prompt(){while(true){scan();} return ERROR;}
-
+mlStatus runbuffer(){return mlSTATUS(run(&Monolith.promptBuffer[0]));}
+mlStatus scan(){scanf("%s",&Monolith.promptBuffer[0]); return runbuffer();}
+mlStatus prompt(){while(1){printf(BLU"> "GRN); scan();} return SUCCESS;}
 
 #endif

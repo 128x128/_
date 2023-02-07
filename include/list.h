@@ -2,8 +2,6 @@
 #define LIST_H
 
 #include "common.h"
-#include "object.h"
-
 
 typedef struct item {
     void* data;
