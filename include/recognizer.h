@@ -2,28 +2,22 @@
 #define RECOGNIZER_H
 
 #include "common.h"
-#include "node.h"
 
-#define MAX_REGEX 4096
-
-typedef struct rexp {
+typedef struct regex {
     buffer* buffer;
     regex_t regex;
-} rexp;
+} regex;
 
-rexp* recognize(const char* _) {
-    rexp* r = (rexp*)malloc(sizeof(rexp));
+regex* initRegex(const char* _) {
+    regex* r = (regex*)malloc(sizeof(regex));
     if (regcomp(&r->regex, _, REG_EXTENDED)) exit(1);
-    r->buffer = string(_);
+    r->buffer = initStringBuffer(_);
     return r;
 }
-
-void rexp_delloc(rexp* _) {
-    bdelloc(_->buffer); free(_);
+void dellocRegex(regex* _) {
+    dellocBuffer(_->buffer); free(_);
 }
-
-
-int match(rexp* x, const char* y) {
+int match(regex* x, const char* y) {
     return !regexec(&x->regex, y, 0, NULL, 0);
 }
 

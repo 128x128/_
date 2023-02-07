@@ -6,7 +6,7 @@
 
 
 typedef struct item {
-    object* obj;
+    void* data;
     struct item* next;
     struct item* prev;
 } item;
@@ -30,6 +30,19 @@ list* initList() {
     l->head = NULL; l->tail = NULL;
     l->size = 0;
     return l;
+}
+//free
+void freeItem(item* i) {
+    free(i->data);
+    free(i);
+}
+void freeList(list* l) {
+    //item* i = pop(l);
+    //while(i) {
+	//freeItem(i);
+	//i = pop(l);
+    //}
+    free(l);
 }
 // property ops
 bool isEmpty(list* l) {
@@ -73,6 +86,7 @@ item* emptyList(list* l) {
 }
 item* pop(list* l) {
     // [3, 5, 2, 1] -> [3, 5, 2]
+    if (isEmpty(l)) return NULL;
     if (l->size==1) return emptyList(l);
     item* t = l->tail;
     if (t->prev != NULL) t->prev->next = NULL;
@@ -82,6 +96,7 @@ item* pop(list* l) {
 }
 item* dequeue(list* l) {
     // [3, 5, 2, 1] -> [5, 2, 1]
+    if (isEmpty(l)) return NULL;
     if (l->size==1) return emptyList(l);
     item* h = l->head;
     if (h->next != NULL) h->next->prev = NULL;

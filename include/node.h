@@ -3,22 +3,7 @@
 
 #include "bits.h"
 #include "types.h"
-//#include "buffer.h"
-
-
-// props
-#define tsize(n) typemap(n->type)->size 
-
-typedef struct buffer buffer;
-typedef struct node node;
-typedef struct list list;
-
-typedef struct buffer {
-    void* data;
-    size_t size;
-    size_t used;
-    size_t bytes;
-} buffer;
+#include "list.h"
 
 typedef struct node {
     void* data;
@@ -27,119 +12,85 @@ typedef struct node {
     list* out;
 } node;
 
-typedef struct list {
-    node* head;
-    node* tail;
+typedef struct transition {
+    buffer* input;
+    node* start;
+    node* end;
+} transition;
+
+typedef struct graph {
+    list* nodes;
+    list* initial;
+    list* terminals;
     size_t size;
-} list;
+} graph, dfa;
 
-
-// setter ops
-void  set_type(node* n, type t)           {n->type = t;   }
-void  set_data(node* n, void *data)       {n->data = data;}
-//void  set_edge(node* n)                   {n->in = balloc(NODE); n->out = balloc(NODE);}
-//node* set_node(node* n, type t, void *d)  {set_type(n, t); set_data(n, d);}
-
-// node alloc ops
-node* node_malloc(type t, void* data) {
-    init_node(n, t, d);
-    node* n = (node*)malloc(sizeof(node));
-    n->type = t; n->data = data;
-    n->in = 
-    //n->in = balloc(NODE); n->out = balloc(NODE);
-    return n;
+enum operators {
+    ALTERNATION,
+    CONCAT,
+    CLOSURE,
 }
 
-void node_free(node* _) {
-    if (_->data) free(_->data); free(_);
-    //bdelloc(_->in); bdelloc(_->out);
-}
-
-//node* nstring(const char* _) {
-    //return  nalloc(STRING, string(_));
-//}
-
+void direct(node* x, node* y);
+void undirect(node* x, node* y);
 
 // initializers
-
-buffer* buffer_malloc(node* _) {
-    buffer* b = (buffer*)malloc(sizeof(buffer));
-    //b->data = malloc(typemap(_)->size);
-    //b->type = _; b->bytes = typemap(_)->size;
-    //b->used = 0; b->size = 0;
-    return b;
+node* initNode(type t, void* data) {
+    node* n = (node*)malloc(sizeof(node));
+    n->type = t; n->data = data;
+    n->in = initList(); n->out = initList();
+    return n;
 }
-
-list* list_malloc() {
-    list* l = (list*)malloc(sizeof(list));
-    l->head = NULL; l->tail = NULL; l->size = 0;
-    return l;
+transition* initTransition(node* x, node* y) {
+    transition* t = (transition*)malloc(sizeof(transition));
+    t->start = x; t->end = y;
+    t->inputs = initList(); 
+    return t;
 }
-
+graph* initGraph() {
+    graph* g = (graph*)malloc(sizeof(graph));
+    g->nodes = initList();
+    return g;
+}
+node* triNode(void* r, void* l, void* r) {
+    node* root = initNode(POINTER, r);
+    node* left = initNode(POINTER, l);
+    node* right = initNode(POINTER, r);
+    direct(root, left);
+    direct(root, right);
+}
 // edge ops
-//void direct(node* x, node* y) {
-    //void** _x = (void**)&x;
-    //void** _y = (void**)&y;
-    //bpush(x->out, _y); 
-    //bpush(y->in, _x);
-//}
+void direct(node* x, node* y) {
+    transition* t = initTransition(x, y);
+    push(x->out, initItem(t));
+    push(y->in, initItem(t));
+}
+void undirect(node* x, node* y) {
+    direct(x, y); direct(y, x);
+}
+// REGEX
+node* precedance(char* exp) {
+    char* current = exp;
+    char* start   = current;   
+    while (current++) {
+	switch(*current) {
+	    case '(': 
+		precedance(current); break;
+	    case ')': 
+		return triNode(exp, start, current);
+	    default: continue;
+	}
+    }
+    return initNode(POINTER, exp);
+}
 
-//void undirect(node* x, node* y) {
-    //direct(x, y); direct(y, x);
-//}
+dfa* initDFA(buffer* re) {
+    // RE -> DFA
+    dfa* g = initGraph();
+    char* c = (char*)re->data;
+    //while(c) {c=advance(c);}
+    return g;
+}
 
-//void nhexdump(node* _) {
-    //bhexdump(_->data);
-//}
-
-// regex ops
-//node* regex_union(buffer* _) {
-    //buffer* b = string("(");
-    //for (int i = 0; i < _->size; i++) {
-	//node* n = (node*)offset(_, i);
-	//concat(b, (buffer*)n->data);
-	//bpush(b, &"|");
-    //}
-    //bpop(b); bpush(b, &")");
-    //return nalloc(STRING, b);
-//}
-
-//node* regex_concat(node* x, node* y) {
-    //buffer* b = string("");
-    //concat(b, x->data);
-    //concat(b, y->data);
-    //return nalloc(STRING, b);
-//}
-
-//node* regex_closure(node* _) {
-    //buffer* b = string("");
-    //concat(b, _->data);
-    //bpush(b, &"*");
-    //return nalloc(STRING, b);
-//}
-
-
-//void lexically_anaylse(node* _) {
-    //return;
-//}
-
-
-//struct node_t {
-    //node* (*string)(const char*);
-    //void (*direct)(node*, node*);
-    //void (*undirect)(node*, node*);
-    //node* (*Union)(buffer*);
-    //node* (*Concat)(node*, node*);
-    //node* (*Closure)(node*);
-//};
-
-//struct node_t Node = {
-    //&nstring,
-    //&direct,
-    //&undirect,
-    //&regex_union,
-    //&regex_concat,
-    //&regex_closure,
-//};
 
 #endif

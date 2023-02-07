@@ -3,7 +3,9 @@
 
 #include "common.h"
 
-static bool BIT_REGISTER[128];
+#define MAX_BITS 128
+
+static bool bitBuffer[MAX_BITS];
 
 typedef unsigned char byte;
 typedef unsigned char bitpos;
@@ -42,17 +44,15 @@ uint64_t* u64cast(byte* x){return (uint64_t*)x;}
 uint128_t* u128cast(byte* x){return (uint128_t*)x;}
 // ops
 bool rdbit (byte* x,bitpos i){return (*(u128cast(x))>>i)%2;};
-void ldbits(byte* x,width n){for(int i=0;i<n;i++){BIT_REGISTER[n-i-1]=rdbit(x, i);}}
-
+void ldbits(byte* x,width n){for(int i=0;i<n;i++){bitBuffer[n-i-1]=rdbit(x, i);}}
+//printers
 void rarrow(){printf(YEL " >> "RESET);}
 void larrow(){printf(YEL " << "RESET);}
 void endl(){printf("\n");}
-
-void prtBitsGrn(width n){for (int i=0;i<n;i++){printf(GRN"%d"RESET,BIT_REGISTER[i]);}}
-void prtBitsRed(width n){for (int i=0;i<n;i++){printf(RED"%d"RESET,BIT_REGISTER[i]);}}
+void prtBitsGrn(width n){for (int i=0;i<n;i++){printf(GRN"%d"RESET,bitBuffer[i]);}}
+void prtBitsRed(width n){for (int i=0;i<n;i++){printf(RED"%d"RESET,bitBuffer[i]);}}
 void prtbits(byte* x,width n){ldbits(x, n);prtBitsGrn(n);}
 void prtdb(byte* x,width n){prtbits(x+n/2,n/2);printf(" ");prtbits(x,n/2);}
-
 void bhd(byte* x,int n){for(int i=0;i<n;i++){hd(x+i,1);rarrow();prtbits(x+i,8);endl();}}
 
 void printu8(void* _) {printf("%d", *(uint8_t*)_);}

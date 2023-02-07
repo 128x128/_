@@ -2,6 +2,7 @@
 #define SCANNER_H
 
 #include "list.h"
+#include "node.h"
 
 typedef struct scanner {
     int start;
@@ -9,9 +10,10 @@ typedef struct scanner {
     int line;
 } scanner;
 
-list* scanTokens(const char* src) {
-    return NULL;
-}
+typedef struct regex {
+    buffer* buffer;
+} regex;
+
 
 
 #endif

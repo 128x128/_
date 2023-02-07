@@ -56,7 +56,7 @@ dtype dt_buffer  = {BUFFER,  QUAD_SIZE, "buffer", NULL};
 dtype dt_node    = {NODE,    QUAD_SIZE, "node",   NULL}; 
 dtype dt_list    = {LIST,    QUAD_SIZE, "list",   NULL}; 
 dtype dt_regex   = {REGEX,   QUAD_SIZE, "regex",   NULL}; 
-dtype dt_operator= {OPERATOR,QUAD_SIZE, "operator",NULL}; 
+dtype dt_regex   = {OPERATOR,QUAD_SIZE, "operator",   NULL}; 
 
 
 dtype* typemap(type _) {
@@ -79,7 +79,6 @@ dtype* typemap(type _) {
 	case NODE:    return &dt_node;
 	case LIST:    return &dt_list;
 	case REGEX:   return &dt_regex;
-	case OPERATOR:return &dt_operator;
 	default: NULL;
     }
 } 
