@@ -4,7 +4,7 @@
 #include "common.h"
 #include "list.h"
 
-#define HASH_BUCKET_SIZE 1024*1024
+#define HASHMAP_SIZE 2^16
 
 uint32_t inline hash32(const char * key) {
     // MurmurOAAT32 hash
@@ -28,31 +28,30 @@ uint64_t inline hash64(const char * key) {
     return h;
 }
 
-typedef struct hash {
-    void** data[HASH_BUCKET_SIZE];
+typedef struct hashmap 
+{
+    void** data[HASHMAP_SIZE];
     size_t size;
-} hash;
+} hashmap;
 
-hash* initHash() {
-    hash* h = (hash*)malloc(sizeof(hash));
+hashmap* initHashmap() {
+    hashmap* h = (hashmap*)malloc(sizeof(hashmap));
     h->size = 0;
     return h;
 }
-void* inspectHash(hash* h, uint32_t key) {
-    return h->data[(key % HASH_BUCKET_SIZE)];
+void* inspectHash(hashmap* h, uint32_t key) {
+    return h->data[(key % HASHMAP_SIZE)];
 }
-int insertHash(hash* h, uint32_t key, void* data) {
+int insertHash(hashmap* h, uint32_t key, void* data) {
     if (inspectHash(h, key)) return 1;
-    memcpy(&h->data[(key % HASH_BUCKET_SIZE)], &data, sizeof(void*));
+    memcpy(&h->data[(key % HASHMAP_SIZE)], &data, sizeof(void*));
     h->size++;
     return 0;
 }
-int deleteHash(hash* h, uint32_t key) {
-    memset(&h->data[(key % HASH_BUCKET_SIZE)], 0, sizeof(void*));
+int deleteHash(hashmap* h, uint32_t key) {
+    memset(&h->data[(key % HASHMAP_SIZE)], 0, sizeof(void*));
     h->size--;
     return 0;
 }
-
-// hashmap
 
 #endif
