@@ -21,6 +21,7 @@ typedef enum type
     FP32,
     FP64,
     CHAR,
+    BYTE,
     STRING,
     POINTER,
     BUFFER,
@@ -51,6 +52,7 @@ dtype dt_int64   = {I64,     QUAD_SIZE, "int64",   NULL};
 dtype dt_fp16    = {FP16,    WORD_SIZE, "fp16",    NULL}; 
 dtype dt_fp32    = {FP32,    LONG_SIZE, "fp32",    NULL}; 
 dtype dt_fp64    = {FP64,    QUAD_SIZE, "fp64",    NULL}; 
+dtype dt_byte    = {BYTE,    BYTE_SIZE, "byte",    NULL}; 
 dtype dt_char    = {CHAR,    BYTE_SIZE, "char",    NULL}; 
 dtype dt_string  = {STRING,  BYTE_SIZE, "str",     NULL}; 
 dtype dt_pointer = {POINTER, QUAD_SIZE, "ptr",     NULL}; 
@@ -76,6 +78,7 @@ dtype* typemap(type _) {
 	case FP32:    return &dt_fp32;
 	case FP64:    return &dt_fp64;
 	case CHAR:    return &dt_char;
+	case BYTE:    return &dt_byte;
 	case STRING:  return &dt_string;
 	case POINTER: return &dt_pointer;
 	case BUFFER:  return &dt_buffer;

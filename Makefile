@@ -1,5 +1,5 @@
 CC := gcc
-CFLAGS=-I -Wall -lcurses -v
+CFLAGS=-I -Wall -lcurses
 
 BUILD_DIR ?= build
 

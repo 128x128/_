@@ -1,5 +1,5 @@
-#ifndef MONOLITH 
-#define MONOLITH
+#ifndef MONOLITH_H
+#define MONOLITH_H
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -76,53 +76,61 @@ typedef enum scStatus
 } 
 scStatus;
 
-#define INITIAL      0
-#define MAX_CHARS    4096
-#define HASHMAP_SIZE 1024*1024
-#define STRING       char*
-#define ADDRESS      void*
-#define HASHMAP      void**
+
+#define MAX_KERNELS       3 
+#define MAX_KERNEL_BYTES  4096
+#define PROMPT_KERNEL     0
+#define SYMBOL_KERNEL     1
+#define REGEX_KERNEL      2
+#define HASHMAP_SIZE      1024*1024
+
+#define STRING            char*
+#define ADDRESS           void*
+#define HASHMAP           void**
+#define BYTES             unsigned char
+
+// monolith
+#define MONOLITH          Monolith 
+
+// kernel
+#define KERNEL(i)         MONOLITH.kernels[i]
+#define KERNEL_BASE(i)    &KERNEL(i).buffer[0]
+#define PROMPT            KERNEL_BASE(PROMPT_KERNEL)
+#define SYMBOL            KERNEL_BASE(SYMBOL_KERNEL)
+#define REGEX             KERNEL_BASE(REGEX_KERNEL)
 
 // hashmap
 #define ADDRESS_H(k,h)  h[k%HASHMAP_SIZE]
 #define INSPECT_H(k,h)  *(ADDRESS_H(k, h))
-#define FREE_H(k,h)     INSPECT_H(k,h) ? true : false
+#define NOTFREE_H(k,h)  INSPECT_H(k,h) ? true : false 
 #define DELETE_H(k,h)   memset(ADDRESS_H(k,h),0,sizeof(ADDRESS))
-#define INSERT_H(k,h,x) memcpy(ADDRESS_H(k,h),x,sizeof(ADDRESS))
+#define INSERT_H(k,h,x) NOTFREE_H(k,h) ? ERROR : !*((int*)memcpy(ADDRESS_H(k,h),x,sizeof(ADDRESS)))
+
 
 #define MLSTATUS(x) (x ? RUNNING : (Monolith.status=ERROR)) 
 
-typedef struct monolith monolith;
-
-mlStatus run     (src* code);
-mlStatus execute (filename* file);
-mlStatus prompt  ();
+typedef struct kernel 
+{
+    BYTES buffer[MAX_KERNEL_BYTES];
+    idx   current;
+}
+kernel;
 
 typedef struct monolith 
 {
     mlStatus       status;
-    mlStatus       (*run)     (src*);
-    mlStatus       (*execute) (filename*);
-    mlStatus       (*prompt)  ();
-    idx            bufferIdx;
-    idx            regexIdx;
-    string         buffer[MAX_CHARS];
-    string         regex[MAX_CHARS];
-    string*        program;
     scStatus       scanStatus;
+    kernel         kernels[MAX_KERNELS];
+    FILE*          src;
     depth          precedence;
-    HASHMAP        table[HASHMAP_SIZE];
+    HASHMAP        symbols[HASHMAP_SIZE];
 } 
 monolith;
 
 monolith Monolith = 
 {
     RUNNING,
-    &run,
-    &execute,
-    &prompt,
-    INITIAL,
-    INITIAL,
+    NONE,
 };
 
 typedef struct edge 
@@ -139,28 +147,30 @@ typedef struct state
 } 
 state;
 
-state* initState(){state* s=(state*)malloc(sizeof(state));s->edges=initList();return s;}
-edge*  initEdge (){edge* e=(edge*)malloc(sizeof(edge));return e;}
-void   setStates(edge* e,state* x,state* y){e->x=x,e->y=y;}
-void   setEdges (edge* e,state* x,state* y){push(x->edges,e);push(y->edges,e);}
+//state* initState(){state* s=(state*)malloc(sizeof(state));s->edges=initList();return s;}
+//edge*  initEdge (){edge* e=(edge*)malloc(sizeof(edge));return e;}
+//void   setStates(edge* e,state* x,state* y){e->x=x,e->y=y;}
+//void   setEdges (edge* e,state* x,state* y){push(x->edges,e);push(y->edges,e);}
 
 int buff2int(STRING b, int n) {
     int x=0;
-    for(int i=0;i<Monolith.bufferIdx;i++){x+=((Monolith.bufferIdx-i)*10*(Monolith.buffer[i]-'0'));}
-    Monolith.bufferIdx=0;
+    //for(int i=0;i<Monolith.bufferIdx;i++){x+=((Monolith.bufferIdx-i)*10*(Monolith.buffer[i]-'0'));}
+    //Monolith.bufferIdx=0;
     return x;
 }
 
-void buffpush(char c) {Monolith.buffer[Monolith.bufferIdx++]=c;}
+void buffpush(char c) {
+    //Monolith.buffer[Monolith.bufferIdx++]=c;
+}
 
-edge* range(char* x) {
-    edge*  e = initEdge();
-    int i = 0;
-    while (*x++!=']') {i++;};
+//edge* range(char* x) {
+    //edge*  e = initEdge();
+    //int i = 0;
+    //while (*x++!=']') {i++;};
     //e->data = (string*)malloc(i);
     //memcpy(&e->data[0], x-i, i+1);
-    return e;
-}
+    //return e;
+//}
 
 scStatus scanChar(char c) 
 {
@@ -176,14 +186,15 @@ scStatus scanChar(char c)
 	default : return NONE;
     }
 }
+scStatus ldsymbol() {return NONE;}
 
 scStatus advance(char c) 
 {
-    state* x = initState();
-    state* y = initState();
-    edge*  e = initEdge();
-    setStates(e,x,y);
-    setEdges (e,x,y);
+    //state* x = initState();
+    //state* y = initState();
+    //edge*  e = initEdge();
+    //setStates(e,x,y);
+    //setEdges (e,x,y);
     if (c>='0'&&c<='9') {return NUMBER;}
     if (c>='A'&&c<='Z') {return UPPER;}
     if (c>='a'&&c<='z') {return LOWER;}
@@ -194,38 +205,29 @@ void regex2NFA(regex* x){while(*x++){Monolith.scanStatus=advance(*x);}}
 
 
 // Main
-mlStatus run(src* code) { 
+void run() { 
+    hd(PROMPT, 32);
     //regex2NFA("[a-z](b|c)*");
-    //void* x = ADDRESS_H(k,&Monolith.table);
-    //INSERT_H(k,&Monolith.table,(void*)0x01);
-    
-    printf("table->%p\n",&Monolith.table);
-    //hd(ADDRESS_H(h64("0"),&Monolith.table), 8);
-    //hd(ADDRESS_H(h64("1"),&Monolith.table), 8);
-    printf("%p\n", Monolith.table[h64("1")%HASHMAP_SIZE]);
-    //printf("%p\n",x);
-    return SUCCESS;
 }
 
-mlStatus execute(filename* file) 
-{
-    FILE *f = fopen(file, "r");
-    fseek(f, 0, SEEK_END);
-    long n = ftell(f);
-
-    fseek(f, 0, SEEK_SET);
-    src* code = (src*)malloc(n+1);
-
-    Monolith.program = code;
-    fread(code, n, 1, f);
-    fclose(f);
-
-    return MLSTATUS(run(code));
+void movefp(int n) {fseek(Monolith.src, n, SEEK_CUR);}
+long resetfp() {fseek(Monolith.src, 0, SEEK_SET); return ftell(Monolith.src);}
+long filesize() {fseek(Monolith.src, 0, SEEK_END); return ftell(Monolith.src);}
+void ldpromptkernel(int n) {fread(PROMPT, n, 1, Monolith.src);}
+void runkernel(int n) {ldpromptkernel(n); movefp(n); run();} 
+void runfile() {
+    long n = filesize(); resetfp();
+    for(int i=0;i<floor(n / MAX_KERNEL_BYTES);i++) {
+	runkernel(MAX_KERNEL_BYTES);
+    }
+    runkernel(n % MAX_KERNEL_BYTES);
 }
-mlStatus runbuffer(){return MLSTATUS(run(&Monolith.buffer[0]));}
-mlStatus scan(){scanf("%s",&Monolith.buffer[0]); return runbuffer();}
-mlStatus prompt(){while(1){printf(BLU"> "GRN); scan();} return SUCCESS;}
-
+void execute(filename* file) {
+    Monolith.src = fopen(file, "r");
+    runfile();
+    fclose(Monolith.src);
+}
+void prompt(){while(true){printf(BLU"> "GRN); scanf("%s",PROMPT); run();}}
 void report(int line,char* where,char* msg){printf("[Line: %d] Error %s :%s",line,where,msg);}
 void error(int line,char* msg){report(line, "", msg);}
 
