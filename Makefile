@@ -1,5 +1,5 @@
 CC := gcc
-CFLAGS=-I -Wall -lcurses
+CFLAGS=-I -Wall -lcurses -v
 
 BUILD_DIR ?= build
 
@@ -19,7 +19,6 @@ ifeq ("$(wildcard $(BUILD_DIR))","")  # mkdir build
 endif
 	$(CC) src/$@.c $(CFLAGS) -o $(BUILD_DIR)/$@
 	@echo "\n\033[92mExecuting...\033[0m"
-	#./$(BUILD_DIR)/$@
 	./$(BUILD_DIR)/$@ $(ARGS)
 	@echo "\n\033[92mDone\033[0m"
 	make clean
