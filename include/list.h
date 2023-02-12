@@ -3,6 +3,10 @@
 
 #include "common.h"
 
+#define LIST  initList()
+#define STACK initList()
+#define TUPLE initList()
+
 typedef struct item {
     void* data;
     struct item* next;
@@ -13,7 +17,7 @@ typedef struct list {
     item* head;
     item* tail;
     size_t size;
-} list;
+} list, stack, pair, tuple;
 
 // init
 item* initItem(void* data) {
@@ -35,11 +39,6 @@ void freeItem(item* i) {
     free(i);
 }
 void freeList(list* l) {
-    //item* i = pop(l);
-    //while(i) {
-	//freeItem(i);
-	//i = pop(l);
-    //}
     free(l);
 }
 // property ops

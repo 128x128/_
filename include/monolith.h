@@ -28,7 +28,7 @@ typedef const char       name;
 typedef const char       filename;
 typedef unsigned char    byte;
 typedef unsigned char    kernel;
-typedef void**           table; 
+typedef void**           hashmap; 
 typedef uint8_t          u8kernel;
 typedef uint32_t         u32kernel; 
 typedef uint64_t         u64kernel;
@@ -42,20 +42,13 @@ typedef enum mlStatus
 } 
 mlStatus;
 
-typedef enum scStatus 
+typedef enum regexTransform
 {
-    NONE,
-    OPEN,
-    CLOSE,
-    UPPER,
-    LOWER,
-    NUMBER,
-    RANGE,
     CONNAT,
     ALTERNATION,
     CLOSURE,
 } 
-scStatus;
+regexTransform;
 
 
 #define BUFFER_SIZE       4096
@@ -69,23 +62,18 @@ scStatus;
 // hashmap
 #define DELETE_H(k,h)     memset(ADDRESS_H(k,h),0,sizeof(void*))
 #define INSERT_H(k,h,x)   NOTFREE_H(k,h) ? ERROR : !*((int*)memcpy(ADDRESS_H(k,h),x,sizeof(void*)))
-#define ADDRESS_H(k,h)    h->map[k%HASHMAP_SIZE]
+#define ADDRESS_H(k,h)    h[k % HASHMAP_SIZE]
 #define INSPECT_H(k,h)    *(ADDRESS_H(k, h))
 #define NOTFREE_H(k,h)    INSPECT_H(k,h) ? true : false 
 
+// Regex
+#define EPSILON           0xFFFFFFFF
 
 #define MLSTATUS(x) (x ? RUNNING : (Monolith.status=ERROR)) 
-
-typedef struct hashmap 
-{
-    table          map[HASHMAP_SIZE];
-}
-hashmap;
 
 typedef struct scanner
 {
     byte           buffer[BUFFER_SIZE]; 
-    scStatus       scanStatus;
     fileptr        fp;
 }
 scanner;
@@ -93,10 +81,6 @@ scanner;
 typedef struct language 
 {
     byte           symbol[BUFFER_SIZE]; 
-    idx            symbolidx;
-    byte           buffer[BUFFER_SIZE]; 
-    hashmap        symbols;
-    depth          precedence;
 }
 language;
 
@@ -107,24 +91,13 @@ typedef struct monolith
 } 
 monolith;
 
-typedef struct state 
-{
-    list*          edges;
-} 
-state;
-
-typedef struct transition 
-{
-    hash           key;
-    state*         dest;
-} 
-transition;
 
 // global structs
 monolith   Monolith;
 scanner    Scanner;
-language   Language;
+language   Regex;
 
+// hash
 uint32_t h32(const char * key) 
 {
     // MurmurOAAT32 hash
@@ -142,73 +115,78 @@ uint64_t h64(const char * key)
 }
 
 
-//state* initState(){state* s=(state*)malloc(sizeof(state));s->edges=initList();return s;}
-//edge*  initEdge (){edge* e=(edge*)malloc(sizeof(edge));return e;}
-//void   setStates(edge* e,state* x,state* y){e->x=x,e->y=y;}
-//void   setEdges (edge* e,state* x,state* y){push(x->edges,e);push(y->edges,e);}
 
-int buff2int(char* b, int n) {
-    int x=0;
-    //for(int i=0;i<Monolith.bufferIdx;i++){x+=((Monolith.bufferIdx-i)*10*(Monolith.buffer[i]-'0'));}
-    //Monolith.bufferIdx=0;
-    return x;
-}
+// Reconginizer
 
-void buffpush(char c) {
-    //Monolith.buffer[Monolith.bufferIdx++]=c;
-}
+#define L_BRCKT             0x28
+#define R_BRCKT             0x29
+#define L_RANGE             0x5B
+#define R_RANGE             0x5D
 
-//edge* range(char* x) {
-    //edge*  e = initEdge();
-    //int i = 0;
-    //while (*x++!=']') {i++;};
-    //e->data = (string*)malloc(i);
-    //memcpy(&e->data[0], x-i, i+1);
-    //return e;
-//}
+#define IS_LBK(x)           (x == L_BRCKT)
+#define IS_RBK(x)           (x == R_BRCKT)
+#define IS_RAN(x)           (x == L_RANGE)
+#define IS_NUM(x)           (x >= '0' && x <= '9')
+#define IS_LOW(x)           (x >= 'a' && x <= 'z')
+#define IS_UPP(x)           (x >= 'A' && x <= 'Z')
+#define IS_SYM(x)           (IS_RAN(x) || IS_NUM(x) || IS_LOW(x) || IS_UPP(x))
 
-// language reconginizer
+#define REGEX_CASE(x)       IS_SYM(x) ? REGEX_OPEN  : REGEX_SYMBOL
 
-scStatus scanChar(char c) 
+hashmap SYMBOL_TABLE[HASHMAP_SIZE]
+
+enum regextype 
 {
-    switch(c) 
+    REGEX_SYMBOL,
+    REGEX_OPEN,
+}
+
+idx nextOccurance(string x, byte c) 
+{
+    string y = x;
+    while(*y++!=c){}
+    return y-x;
+}
+
+string nextSymbol(string x) 
+{
+    idx          n = (IS_RAN(*x) ? nextOccurance(x, R_RANGE) : 1);
+    string* symbol = (string)calloc(n+1, 1); memcpy(symbol, x, n);
+    hash         h = h32(symbol);
+    INSERT_H(h, &SYMBOL_TABLE, symbol);
+    return x + n;
+}
+
+
+pair* regex2NFA(string x)
+{
+    pair* NFA = PAIR;
+    push(NFA, LIST);
+    push(NFA, LIST);
+
+    while(*x)
     {
-	case '(': return OPEN;
-	case ')': return CLOSE;
-	case '|': return ALTERNATION;
-	case '*': return CLOSURE; 
-	case '[': return RANGE;
-	case ']': return RANGE;
-	case '-': return RANGE;
-	default : return NONE;
+	switch(REGEX_CASE(*x)) 
+	{
+	    case REGEX_SYMBOL: x = nextSymbol(x);
+			       break;
+	    case REGEX_OPEN:
+		x++;
+		break;
+	    default: x++;
+		     break;
+	}
     }
-}
-
-void pushsymbol(char c) 
-{
-}
-
-void advance(char c) 
-{
-    if (c=='['||c==']') {}
-    if (c>='0'&&c<='9') {}
-    if (c>='A'&&c<='Z') {}
-    if (c>='a'&&c<='z') {}
-    else scanChar(c);
-}
-
-void regex2NFA(string x)
-{
-    while(*x++){advance(*x);}
 }
 
 
 // Main
-
 void runScanner() 
 {
-    regex2NFA("a(b|c)*");
-    hd(&Scanner.buffer[0], 32);
+    // ([0-3]|[b-k])
+    // (b|c|([0-3]|[b-k]))
+    printf("%d\n", IS_RAN(']'));
+    regex2NFA("a(b|c|([0-33]|[b-k]))*");
 }
 
 void execute(filename* file)
