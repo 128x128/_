@@ -22,19 +22,34 @@ typedef unsigned __int128 uint128_t;
 #define WHT   "\x1B[37m"
 #define RESET "\x1B[0m"
 
-void hd(void* addr, int len) {
-    unsigned char buff[len];
-    const unsigned char * pc = (const unsigned char *)addr;
-    printf("\033[91m%p\033[0m ", addr);
-    for (int i = 0; i < len; i++) {
-	printf ("\033[94m %02x \033[0m", pc[i]);
-	if ((pc[i] < 0x20) || (pc[i] > 0x7e))
-	    buff[i] = '.';
-	else
-	    buff[i] = pc[i];
-	buff[(i) + 1] = '\0';
+void space(){printf(" ");}
+void endl(){printf("\n");}
+void tab(){printf("\t");}
+void prtaddr(void* addr) {printf("\033[91m%p\033[0m", addr);}
+
+void prthex(void* addr, int n) 
+{
+    for (int i = 0; i < n; i++) {
+	printf("\033[94m%02x \033[0m", *((unsigned char*)addr+i));
     }
-    printf ("\033[92m  %s\033[0m", buff);
+}
+void prtchar(void* addr, int n) 
+{
+    for (int i = 0; i < n; i++) {
+	char c = *((unsigned char*)addr+i);
+	if (c < 0x20 || c > 0x7e) {c = '.';}
+    	printf("\033[92m%c\033[0m", c);
+    }
+}
+
+void hd(void* x, int n) 
+{
+    prtaddr(x); space(); prthex(x,n); prtchar(x,n);
+}
+
+void hexdump(void* x, int n) 
+{
+    prtaddr(x); space(); prthex(x,n); prtchar(x,n); endl();
 }
 
 
@@ -48,7 +63,6 @@ void ldbits(byte* x,width n){for(int i=0;i<n;i++){bitBuffer[n-i-1]=rdbit(x, i);}
 //printers
 void rarrow(){printf(YEL " >> "RESET);}
 void larrow(){printf(YEL " << "RESET);}
-void endl(){printf("\n");}
 void prtBitsGrn(width n){for (int i=0;i<n;i++){printf(GRN"%d"RESET,bitBuffer[i]);}}
 void prtBitsRed(width n){for (int i=0;i<n;i++){printf(RED"%d"RESET,bitBuffer[i]);}}
 void prtbits(byte* x,width n){ldbits(x, n);prtBitsGrn(n);}

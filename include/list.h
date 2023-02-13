@@ -3,35 +3,53 @@
 
 #include "common.h"
 
-#define LIST  initList()
-#define STACK initList()
-#define TUPLE initList()
-
-typedef struct item {
+typedef struct item 
+{
     void* data;
     struct item* next;
     struct item* prev;
 } item;
 
-typedef struct list {
+typedef struct list 
+{
     item* head;
     item* tail;
     size_t size;
-} list, stack, pair, tuple;
+} 
+list, stack, pair, tuple, state, transition,
+NFA, NFAs, State, Transition;
+
+void push(list* l, void* data);
 
 // init
-item* initItem(void* data) {
+item* initItem(void* data) 
+{
     item* i = (item*)malloc(sizeof(item));
     i->data = data;
     i->next = NULL;
     i->prev = NULL;
     return i;
 }
-list* initList() {
+list* initList() 
+{
     list* l = (list*)malloc(sizeof(list));
     l->head = NULL; l->tail = NULL;
     l->size = 0;
     return l;
+}
+pair* initPair(void* x, void* y) 
+{
+    // p = (x, y)
+    pair* p = initList();
+    push(p, x); push(p, y);
+    return p;
+}
+transition* initTransition(void* x, void* y, uint64_t z) 
+{
+    // t = x -> y
+    transition* t = initPair((void*)z, y);
+    push((state*)x, t);
+    return t;
 }
 //free
 void freeItem(item* i) {

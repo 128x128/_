@@ -28,6 +28,7 @@ typedef const char       name;
 typedef const char       filename;
 typedef unsigned char    byte;
 typedef unsigned char    kernel;
+typedef void*            data; 
 typedef void**           hashmap; 
 typedef uint8_t          u8kernel;
 typedef uint32_t         u32kernel; 
@@ -41,14 +42,6 @@ typedef enum mlStatus
     ERROR   =  1,
 } 
 mlStatus;
-
-typedef enum regexTransform
-{
-    CONNAT,
-    ALTERNATION,
-    CLOSURE,
-} 
-regexTransform;
 
 
 #define BUFFER_SIZE       4096
@@ -78,13 +71,6 @@ typedef struct scanner
 }
 scanner;
 
-typedef struct language 
-{
-    byte           symbol[BUFFER_SIZE]; 
-}
-language;
-
-
 typedef struct monolith 
 {
     mlStatus       status;
@@ -95,10 +81,9 @@ monolith;
 // global structs
 monolith   Monolith;
 scanner    Scanner;
-language   Regex;
 
 // hash
-uint32_t h32(const char * key) 
+uint32_t h32(string key) 
 {
     // MurmurOAAT32 hash
     uint32_t h = H32_BASE;
@@ -106,7 +91,7 @@ uint32_t h32(const char * key)
     return h;
 }
 
-uint64_t h64(const char * key) 
+uint64_t h64(string key) 
 {
     // MurmurOAAT64 hash
     uint64_t h = H64_BASE;
@@ -114,6 +99,39 @@ uint64_t h64(const char * key)
     return h;
 }
 
+
+// Trigon
+
+#define TRIGON              Trigon* 
+#define TRIGON_HEAD(T)      ((TRIGON)T->x)
+#define TRIGON_TAIL(T)      ((TRIGON)T->y)
+
+typedef struct Trigon 
+{
+    data x;
+    data y;
+    data z;
+}
+Trigon, List, Stack, Tuple, Pair;
+
+TRIGON set(TRIGON T, data x, data y, data z) 
+{
+    T->x = x;
+    T->y = y;
+    T->z = z;
+    return T;
+}
+
+TRIGON initTrigon() 
+{
+    return set((TRIGON)malloc(sizeof(Trigon)), NULL, NULL, NULL);
+}
+
+TRIGON prtTrigon(TRIGON T) 
+{
+    printf("TRIGON: "); hexdump(T, sizeof(data)*3);
+    return T;
+}
 
 
 // Reconginizer
@@ -123,6 +141,8 @@ uint64_t h64(const char * key)
 #define L_RANGE             0x5B
 #define R_RANGE             0x5D
 
+#define IS_CLO(x)           (x == '*')
+#define IS_ALT(x)           (x == '|')
 #define IS_LBK(x)           (x == L_BRCKT)
 #define IS_RBK(x)           (x == R_BRCKT)
 #define IS_RAN(x)           (x == L_RANGE)
@@ -131,15 +151,37 @@ uint64_t h64(const char * key)
 #define IS_UPP(x)           (x >= 'A' && x <= 'Z')
 #define IS_SYM(x)           (IS_RAN(x) || IS_NUM(x) || IS_LOW(x) || IS_UPP(x))
 
-#define REGEX_CASE(x)       IS_SYM(x) ? REGEX_OPEN  : REGEX_SYMBOL
+#define INIT_NFA            (initPair(initList(), initList()))
+#define NFA_STRUCT(x)       ((NFA*)x->data)
+#define NFA_START(x)        ((state*)x->head)
+#define NFA_END(x)          ((state*)x->tail)
 
-hashmap SYMBOL_TABLE[HASHMAP_SIZE]
+#define REGEX_CLO_CASE(x)   (IS_CLO(x) ? REGEX_CONCAT        : REGEX_CLOSURE)
+#define REGEX_ALT_CASE(x)   (IS_ALT(x) ? REGEX_CLO_CASE(x)   : REGEX_ALTERNATION)
+#define REGEX_CLOSE_CASE(x) (IS_RBK(x) ? REGEX_ALT_CASE(x)   : REGEX_CLOSE)
+#define REGEX_OPEN_CASE(x)  (IS_LBK(x) ? REGEX_CLOSE_CASE(x) : REGEX_OPEN)
+#define REGEX_CASE(x)       (IS_SYM(x) ? REGEX_OPEN_CASE(x)  : REGEX_SYMBOL)
 
-enum regextype 
+hashmap SYMBOL_TABLE[HASHMAP_SIZE];
+
+
+enum regexType 
 {
     REGEX_SYMBOL,
     REGEX_OPEN,
+    REGEX_CLOSE,
+    REGEX_ALTERNATION,
+    REGEX_CLOSURE,
+    REGEX_CONCAT,
+};
+
+typedef enum regexTransform
+{
+    ALTERNATION,
+    CONCAT,
+    CLOSURE,
 }
+regexTransform;
 
 idx nextOccurance(string x, byte c) 
 {
@@ -148,45 +190,99 @@ idx nextOccurance(string x, byte c)
     return y-x;
 }
 
+regexTransform regexStatus = CONCAT;
+NFA* currNFA = NULL;
+NFA* prevNFA = NULL;
+
+NFA* alterationNFA(NFA* x, NFA* y) 
+{
+    NFA*  G = INIT_NFA;
+    initTransition(NFA_START(G), NFA_START(x), EPSILON);
+    initTransition(NFA_START(G), NFA_START(x), EPSILON);
+    initTransition(NFA_END(x), NFA_END(G), EPSILON);
+    initTransition(NFA_END(y), NFA_END(G), EPSILON);
+    return G;
+}
+
+NFA* concatNFA(NFA* x, NFA* y) 
+{
+    NFA* G = INIT_NFA;
+    initTransition(NFA_START(G), NFA_START(x), EPSILON);
+    initTransition(NFA_END(y), NFA_END(G), EPSILON);
+    return G;
+}
+
+NFA* closureNFA(NFA* x) 
+{
+    NFA* G = INIT_NFA;
+    initTransition(NFA_END(x), NFA_START(x), EPSILON);
+    initTransition(NFA_START(G), NFA_END(G), EPSILON);
+    return G;
+}
+
+NFA* constructNFA() 
+{
+    switch(regexStatus) 
+    {
+	case CONCAT:      currNFA = concatNFA(prevNFA, currNFA);
+			  break; 
+	case ALTERNATION: currNFA = alterationNFA(prevNFA, currNFA); 
+			  break; 
+	case CLOSURE:     currNFA = closureNFA(currNFA);
+			  break; 
+	default:          break;  
+    }
+    return currNFA;
+}
+
 string nextSymbol(string x) 
 {
+    while (IS_SYM(*x++)==0){}
+    NFA*         G = INIT_NFA;
     idx          n = (IS_RAN(*x) ? nextOccurance(x, R_RANGE) : 1);
-    string* symbol = (string)calloc(n+1, 1); memcpy(symbol, x, n);
-    hash         h = h32(symbol);
-    INSERT_H(h, &SYMBOL_TABLE, symbol);
+    string symbol = (string)calloc(n+1, 1); memcpy(symbol, x, n);
+    INSERT_H(h64(symbol), &SYMBOL_TABLE, symbol);
+    initTransition(NFA_START(G), NFA_END(G), h64(symbol));
+
+    prevNFA = currNFA;
+    currNFA = G;
+    constructNFA();
+
     return x + n;
 }
 
 
-pair* regex2NFA(string x)
+NFA* initNFA(string x)
 {
-    pair* NFA = PAIR;
-    push(NFA, LIST);
-    push(NFA, LIST);
-
     while(*x)
     {
 	switch(REGEX_CASE(*x)) 
 	{
-	    case REGEX_SYMBOL: x = nextSymbol(x);
-			       break;
-	    case REGEX_OPEN:
-		x++;
-		break;
-	    default: x++;
-		     break;
+	    case REGEX_SYMBOL:      x            = nextSymbol(x);  
+				    break;
+	    case REGEX_OPEN:        currNFA = initNFA(++x); 
+				    break;
+	    case REGEX_ALTERNATION: regexStatus  = ALTERNATION; 
+				    break;
+	    case REGEX_CLOSURE:     regexStatus  = CLOSURE;
+				    break;
+	    case REGEX_CONCAT:      regexStatus  = CONCAT;
+				    break;
+	    case REGEX_CLOSE:       return NULL;
+	    default:                regexStatus  = CONCAT;
+				    x++;
 	}
     }
+    return NULL;
 }
 
 
 // Main
-void runScanner() 
+void run() 
 {
-    // ([0-3]|[b-k])
-    // (b|c|([0-3]|[b-k]))
-    printf("%d\n", IS_RAN(']'));
-    regex2NFA("a(b|c|([0-33]|[b-k]))*");
+    TRIGON x = initTrigon();
+    prtTrigon(x);
+    //initNFA("a(b|c)");
 }
 
 void execute(filename* file)
@@ -194,7 +290,7 @@ void execute(filename* file)
     Scanner.fp = fopen(file, "r");
     while(fgets((char*)&Scanner.buffer[0], BUFFER_SIZE, Scanner.fp)) 
     {
-	runScanner();
+	run();
     }
     fclose(Scanner.fp);
 }
@@ -205,18 +301,8 @@ void prompt()
     {
 	printf(BLU "> " GRN); 
 	scanf("%s", &Scanner.buffer[0]); 
-	runScanner();
+	run();
     }
-}
-
-void report(int line,char* where,char* msg)
-{
-    printf("[Line: %d] Error %s :%s",line,where,msg);
-}
-
-void error(int line,char* msg)
-{
-    report(line, "", msg);
 }
 
 #endif
