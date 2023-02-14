@@ -30,9 +30,6 @@ typedef unsigned char    byte;
 typedef unsigned char    kernel;
 typedef void*            data; 
 typedef void**           hashmap; 
-typedef uint8_t          u8kernel;
-typedef uint32_t         u32kernel; 
-typedef uint64_t         u64kernel;
 typedef FILE*            fileptr;
 
 typedef enum mlStatus 
@@ -45,14 +42,14 @@ mlStatus;
 
 
 #define BUFFER_SIZE       4096
-#define HASHMAP_SIZE      1024
 
+// hashmap
+#define HASHMAP_SIZE      1024
 #define H32_BASE          3323198485ul
 #define H64_BASE          525201411107845655ull
 #define H32_MUL           0x5bd1e995
 #define H64_MUL           0x5bd1e9955bd1e995
 
-// hashmap
 #define DELETE_H(k,h)     memset(ADDRESS_H(k,h),0,sizeof(void*))
 #define INSERT_H(k,h,x)   NOTFREE_H(k,h) ? ERROR : !*((int*)memcpy(ADDRESS_H(k,h),x,sizeof(void*)))
 #define ADDRESS_H(k,h)    h[k % HASHMAP_SIZE]
@@ -60,7 +57,7 @@ mlStatus;
 #define NOTFREE_H(k,h)    INSPECT_H(k,h) ? true : false 
 
 // Regex
-#define EPSILON           0xFFFFFFFF
+#define EPSILON           0x00000000
 
 #define MLSTATUS(x) (x ? RUNNING : (Monolith.status=ERROR)) 
 
@@ -87,7 +84,9 @@ uint32_t h32(string key)
 {
     // MurmurOAAT32 hash
     uint32_t h = H32_BASE;
-    for (;*key;++key){h^=*key;h*=H32_MUL;h^=h>>15;}
+    for (;*key;++key) {
+	h^=*key;h*=H32_MUL;h^=h>>15;
+    }
     return h;
 }
 
@@ -95,26 +94,50 @@ uint64_t h64(string key)
 {
     // MurmurOAAT64 hash
     uint64_t h = H64_BASE;
-    for (;*key;++key){h^=*key;h*=H64_MUL;h^=h>>47;}
+    for (;*key;++key) {
+	h^=*key;h*=H64_MUL;h^=h>>47;
+    }
     return h;
 }
 
-
 // Trigon
 
-#define TRIGON              Trigon* 
-#define TRIGON_HEAD(T)      ((TRIGON)T->x)
-#define TRIGON_TAIL(T)      ((TRIGON)T->y)
+#define TRIGON                Trigon* 
+#define TRIGON_MALLOC         trigonset((TRIGON)malloc(sizeof(Trigon)), NULL, NULL, NULL);
+#define TRIGON_HEXDUMP(T)     printf("[TRIGON] ");hd(&T->x,8);hd(&T->y,8);hd(&T->z,8); endl();
+#define TRIGON_U64_PRT(x)     printu64(TRIGON_U64_PTR(x));
+
+#define TRIGON_X(T)           (T->x)
+#define TRIGON_Y(T)           (T->y)
+#define TRIGON_Z(T)           (T->z)
+#define TRIGON_U64_VAL(x)     ((uint64_t)(x))
+#define TRIGON_U64_PTR(x)     ((uint64_t*)(&x))
+#define TRIGON_INC(x)         (*TRIGON_U64_PTR(x))++
+#define TRIGON_DEC(x)         (*TRIGON_U64_PTR(x))--
+
+// List
+#define TRIGON_SIZE(T)        TRIGON_U64_VAL(T->z)
+#define TRIGON_EMPTY(T)       TRIGON_SIZE(T) ?  true : false
+#define TRIGON_HEAD(T)        TRIGON_X(T)
+#define TRIGON_TAIL(T)        TRIGON_Y(T)
+
+#define TRIGON_ADD_EMPTY(T,x) TRIGON_HEAD(T) = x; TRIGON_TAIL(T) = x; TRIGON_INC(T->z);
+#define TRIGON_PUSH(T,x)      TRIGON_X(T)
+#define TRIGON_ENQUEUE(T,x)   TRIGON_X(T)
+#define TRIGON_DEQUEUE(T)     TRIGON_X(T)
+#define TRIGON_POP(T)         TRIGON_X(T)
+
+typedef struct Trigon Trigon;
 
 typedef struct Trigon 
 {
-    data x;
-    data y;
-    data z;
+    TRIGON x;
+    TRIGON y;
+    TRIGON z;
 }
 Trigon, List, Stack, Tuple, Pair;
 
-TRIGON set(TRIGON T, data x, data y, data z) 
+TRIGON trigonset(TRIGON T, data x, data y, data z) 
 {
     T->x = x;
     T->y = y;
@@ -122,17 +145,10 @@ TRIGON set(TRIGON T, data x, data y, data z)
     return T;
 }
 
-TRIGON initTrigon() 
+TRIGON Push(TRIGON x, TRIGON y) 
 {
-    return set((TRIGON)malloc(sizeof(Trigon)), NULL, NULL, NULL);
+    return x;
 }
-
-TRIGON prtTrigon(TRIGON T) 
-{
-    printf("TRIGON: "); hexdump(T, sizeof(data)*3);
-    return T;
-}
-
 
 // Reconginizer
 
@@ -280,8 +296,11 @@ NFA* initNFA(string x)
 // Main
 void run() 
 {
-    TRIGON x = initTrigon();
-    prtTrigon(x);
+    TRIGON L = TRIGON_MALLOC;
+    TRIGON x = TRIGON_MALLOC;
+    TRIGON_ADD_EMPTY(L, x);
+    TRIGON_HEXDUMP(L);
+
     //initNFA("a(b|c)");
 }
 

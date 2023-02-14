@@ -13,19 +13,40 @@ typedef unsigned char width;
 typedef __int128 int128_t;
 typedef unsigned __int128 uint128_t;
 
-#define RED   "\x1B[31m"
-#define GRN   "\x1B[32m"
-#define YEL   "\x1B[33m"
-#define BLU   "\x1B[34m"
-#define MAG   "\x1B[35m"
-#define CYN   "\x1B[36m"
-#define WHT   "\x1B[37m"
-#define RESET "\x1B[0m"
+#define RED             "\x1B[31m"
+#define GRN             "\x1B[32m"
+#define YEL             "\x1B[33m"
+#define BLU             "\x1B[34m"
+#define MAG             "\x1B[35m"
+#define CYN             "\x1B[36m"
+#define WHT             "\x1B[37m"
+#define RESET           "\x1B[0m"
+
+#define PRT_RED         printf(RED)
+#define PRT_GRN         printf(GRN)
+#define PRT_YEL         printf(YEL)
+#define PRT_BLU         printf(BLU)
+#define PRT_MAG         printf(YEL)
+#define PRT_CYN         printf(CYN)
+#define PRT_WHT         printf(WHT)
+#define PRT_RESET       printf(RESET)
+
+#define PRT_SPACE       printf(" ")
+#define PRT_TAB         printf("\t")
+#define PRT_NEWLINE     printf("\n")
+
+#define CHAR_REPR(x)    (x<0x20||x>0x7E) ? 0x2E : x
+#define PRT_PTR(x)      PRT_RED; printf("%p",   x);                               PRT_RESET;
+#define PRT_HEX(x)      PRT_BLU; printf("%02x", *((unsigned char*)x));            PRT_RESET; 
+#define PRT_CHAR(x)     PRT_GRN; printf("%c",   CHAR_REPR(*((unsigned char*)x))); PRT_RESET; 
+
+#define PRT_BUFFER(x,n) for(int i=0;i<n;i++){ PRT_CHAR( ((unsigned char*)x+i) ); }  
+#define PRT_HEX_N(x,n)  for(int i=0;i<n;i++){ PRT_HEX ( ((unsigned char*)x+i) ); PRT_SPACE; }  
 
 void space(){printf(" ");}
 void endl(){printf("\n");}
 void tab(){printf("\t");}
-void prtaddr(void* addr) {printf("\033[91m%p\033[0m", addr);}
+void prtptr(void* addr) {printf("\033[91m%p\033[0m", addr);}
 
 void prthex(void* addr, int n) 
 {
@@ -44,12 +65,12 @@ void prtchar(void* addr, int n)
 
 void hd(void* x, int n) 
 {
-    prtaddr(x); space(); prthex(x,n); prtchar(x,n);
+    prtptr(x); space(); prthex(x,n); prtchar(x,n); space();
 }
 
 void hexdump(void* x, int n) 
 {
-    prtaddr(x); space(); prthex(x,n); prtchar(x,n); endl();
+    prtptr(x); space(); prthex(x,n); prtchar(x,n); endl();
 }
 
 
