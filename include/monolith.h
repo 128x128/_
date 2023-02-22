@@ -12,7 +12,6 @@
 #include <termios.h>
 #include <stdarg.h>
 
-#include "bits.h"
 #include "util.h"
 #include "types.h"
 #include "buffer.h"
@@ -26,7 +25,6 @@ typedef uint32_t         idx;
 typedef uint64_t         hash;
 typedef const char       name;
 typedef const char       filename;
-typedef unsigned char    byte;
 typedef unsigned char    kernel;
 typedef void*            data; 
 typedef void**           hashmap; 
@@ -41,43 +39,20 @@ typedef enum mlStatus
 mlStatus;
 
 
-#define BUFFER_SIZE       4096
+#define BUFFER_SIZE           4096
 
 // hashmap
-#define HASHMAP_SIZE      1024
-#define H32_BASE          3323198485ul
-#define H64_BASE          525201411107845655ull
-#define H32_MUL           0x5bd1e995
-#define H64_MUL           0x5bd1e9955bd1e995
+#define HASHMAP_SIZE          1024
+#define H32_BASE              3323198485ul
+#define H64_BASE              525201411107845655ull
+#define H32_MUL               0x5bd1e995
+#define H64_MUL               0x5bd1e9955bd1e995
 
-#define DELETE_H(k,h)     memset(ADDRESS_H(k,h),0,sizeof(void*))
-#define INSERT_H(k,h,x)   NOTFREE_H(k,h) ? ERROR : !*((int*)memcpy(ADDRESS_H(k,h),x,sizeof(void*)))
-#define ADDRESS_H(k,h)    h[k % HASHMAP_SIZE]
-#define INSPECT_H(k,h)    *(ADDRESS_H(k, h))
-#define NOTFREE_H(k,h)    INSPECT_H(k,h) ? true : false 
-
-// Regex
-#define EPSILON           0x00000000
-
-#define MLSTATUS(x) (x ? RUNNING : (Monolith.status=ERROR)) 
-
-typedef struct scanner
-{
-    byte           buffer[BUFFER_SIZE]; 
-    fileptr        fp;
-}
-scanner;
-
-typedef struct monolith 
-{
-    mlStatus       status;
-} 
-monolith;
-
-
-// global structs
-monolith   Monolith;
-scanner    Scanner;
+#define DELETE_H(k,h)         memset(ADDRESS_H(k,h),0,sizeof(void*))
+#define INSERT_H(k,h,x)       NOTFREE_H(k,h) ? ERROR : !*((int*)memcpy(ADDRESS_H(k,h),x,sizeof(void*)))
+#define ADDRESS_H(k,h)        h[k % HASHMAP_SIZE]
+#define INSPECT_H(k,h)        *(ADDRESS_H(k, h))
+#define NOTFREE_H(k,h)        INSPECT_H(k,h) ? true : false 
 
 // hash
 uint32_t h32(string key) 
@@ -100,55 +75,141 @@ uint64_t h64(string key)
     return h;
 }
 
+// Regex
+#define EPSILON               0x00000000
+
+#define MLSTATUS(x)           (x ? RUNNING : (Monolith.status=ERROR)) 
+
+typedef struct scanner
+{
+    byte           buffer[BUFFER_SIZE]; 
+    fileptr        fp;
+}
+scanner;
+
+typedef struct monolith 
+{
+    mlStatus       status;
+} 
+monolith;
+
+
+// global structs
+monolith   Monolith;
+scanner    Scanner;
+
+
+#define RED                   "\x1B[31m"
+#define LIM                   "\x1B[32m"
+#define YEL                   "\x1B[33m"
+#define BLU                   "\x1B[34m"
+#define MAG                   "\x1B[35m"
+#define CYN                   "\x1B[36m"
+#define WHT                   "\x1B[37m"
+#define GRN                   "\033[92m"
+#define LRED                  "\033[91m"
+#define RESET                 "\x1B[0m"
+
+#define PRT_RED               printf(RED)
+#define PRT_LRED              printf(LRED)
+#define PRT_GRN               printf(GRN)
+#define PRT_YEL               printf(YEL)
+#define PRT_BLU               printf(BLU)
+#define PRT_MAG               printf(YEL)
+#define PRT_CYN               printf(CYN)
+#define PRT_WHT               printf(WHT)
+#define PRT_LIM               printf(LIM)
+#define PRT_RESET             printf(RESET)
+
+#define PRT_SPACE             printf(" ")
+#define PRT_TAB               printf("\t")
+#define PRT_NL                printf("\n")
+#define PRT(x)                printf(YEL x RESET)
+#define RARROW                PRT(" -> ") 
+#define LARROW                PRT(" <- ") 
+
+#define CHAR_REPR(x)          (x < 0x20 || x > 0x7E) ? 0x2E : x
+#define PRT_PTR(x)            (x ? printf(LRED "%p" RESET,x) : printf(LRED "0x000000000000" RESET));
+#define PRT_HEX(x)            printf(BLU "%02x" RESET, *((byte*)x));
+#define PRT_CHAR(x)           printf(GRN "%c"   RESET, CHAR_REPR(*((byte*)x)));
+
+#define PRT_BUFFER(x,n)       for(int i=0;i<n;i++){ PRT_CHAR( ((byte*)x+i) );            }  
+#define PRT_HEX_RANGE(x,n)    for(int i=0;i<n;i++){ PRT_HEX ( ((byte*)x+i) ); PRT_SPACE; }  
+
+#define PRT_U64(x)            printf(GRN "%llu" RESET, *((uint64_t*)x));
+#define PRT_I64(x)            printf(GRN "%lld" RESET, *((int64_t *)x));
+
+#define PRT_HEXDUMP(x,n)      PRT_PTR(x); PRT_SPACE; PRT_HEX_RANGE(x,n); PRT_BUFFER(x,n);
+
+#define PRT_VERTEX(x)         PRT_TAB; PRT("vertex at "); PRT_HEXDUMP(x, SIZEOF_VERTEX); PRT_SPACE; \
+                                       PRT("ptr=");     PRT_PTR( TRIGON(x) );            PRT_SPACE; \
+                                       PRT("u64=");     PRT_U64(x);                      PRT_SPACE; \
+                                       PRT("i64=");     PRT_I64(x);                      PRT_NL;
+
+#define PRT_TRIGON(x)         PRT("TRIGON at "); PRT_PTR(x) PRT_NL; \
+                              PRT("[X]"); PRT_VERTEX(TRIGON_X(x)); \
+                              PRT("[Y]"); PRT_VERTEX(TRIGON_Y(x)); \
+                              PRT("[Z]"); PRT_VERTEX(TRIGON_Z(x));
+
+#define PRT_LIST(L)           PRT("List: \n"); for(Trigon T=TRIGON_HEAD(L);T!=NULL;T=TRIGON_NEXT(T)) {PRT_TRIGON(T)}
+
 // Trigon
 
-#define TRIGON                Trigon* 
-#define TRIGON_MALLOC         trigonset((TRIGON)malloc(sizeof(Trigon)), NULL, NULL, NULL);
-#define TRIGON_HEXDUMP(T)     printf("[TRIGON] ");hd(&T->x,8);hd(&T->y,8);hd(&T->z,8); endl();
-#define TRIGON_U64_PRT(x)     printu64(TRIGON_U64_PTR(x));
+typedef void*                 Trigon;
 
-#define TRIGON_X(T)           (T->x)
-#define TRIGON_Y(T)           (T->y)
-#define TRIGON_Z(T)           (T->z)
-#define TRIGON_U64_VAL(x)     ((uint64_t)(x))
-#define TRIGON_U64_PTR(x)     ((uint64_t*)(&x))
-#define TRIGON_INC(x)         (*TRIGON_U64_PTR(x))++
-#define TRIGON_DEC(x)         (*TRIGON_U64_PTR(x))--
+#define TRIGON(_)             (*((void**)   _))
+#define I64(_)                (*((int64_t *)_))
+#define U64(_)                (*((uint64_t*)_))
 
-// List
-#define TRIGON_SIZE(T)        TRIGON_U64_VAL(T->z)
-#define TRIGON_EMPTY(T)       TRIGON_SIZE(T) ?  true : false
-#define TRIGON_HEAD(T)        TRIGON_X(T)
-#define TRIGON_TAIL(T)        TRIGON_Y(T)
+#define SIZEOF_VERTEX         8
+#define SIZEOF_TRIGON         SIZEOF_VERTEX * 3 
+#define TRIGON_MALLOC         calloc(1, SIZEOF_TRIGON)
 
-#define TRIGON_ADD_EMPTY(T,x) TRIGON_HEAD(T) = x; TRIGON_TAIL(T) = x; TRIGON_INC(T->z);
-#define TRIGON_PUSH(T,x)      TRIGON_X(T)
-#define TRIGON_ENQUEUE(T,x)   TRIGON_X(T)
-#define TRIGON_DEQUEUE(T)     TRIGON_X(T)
-#define TRIGON_POP(T)         TRIGON_X(T)
+#define X_OFFSET              0
+#define Y_OFFSET              8
+#define Z_OFFSET              16
 
-typedef struct Trigon Trigon;
+#define TRIGON_X(T)           (T + X_OFFSET)
+#define TRIGON_Y(T)           (T + Y_OFFSET)
+#define TRIGON_Z(T)           (T + Z_OFFSET)
 
-typedef struct Trigon 
-{
-    TRIGON x;
-    TRIGON y;
-    TRIGON z;
-}
-Trigon, List, Stack, Tuple, Pair;
 
-TRIGON trigonset(TRIGON T, data x, data y, data z) 
-{
-    T->x = x;
-    T->y = y;
-    T->z = z;
-    return T;
-}
 
-TRIGON Push(TRIGON x, TRIGON y) 
-{
-    return x;
-}
+#define TRIGON_SET_V(V,_)     memcpy(V, _, SIZEOF_VERTEX)
+#define TRIGON_SET_X(T,_)     TRIGON_SET_V(TRIGON_X(T), _)
+#define TRIGON_SET_Y(T,_)     TRIGON_SET_V(TRIGON_Y(T), _) 
+#define TRIGON_SET_Z(T,_)     TRIGON_SET_V(TRIGON_Z(T), _)
+#define TRIGON_SET_E(V,X)     TRIGON_SET_V(V, &X)
+#define TRIGON_SET(T,x,y,z)   TRIGON_SET_X(T,x); TRIGON_SET_Y(T,y); TRIGON_SET_Z(T,z);
+
+#define TRIGON_CLR_V(V)       memset(V, 0x00, SIZEOF_VERTEX)
+
+#define TRIGON_NEXT(T)        TRIGON(TRIGON_Y(T))
+#define TRIGON_PREV(T)        TRIGON(TRIGON_X(T))
+#define TRIGON_HEAD(L)        TRIGON(TRIGON_X(L))
+#define TRIGON_TAIL(L)        TRIGON(TRIGON_Y(L))
+
+#define TRIGON_ADD_BACK(L,T)  TRIGON_SET_E(TRIGON_X(T), TRIGON_TAIL(L));  \
+			      TRIGON_SET_E(TRIGON_Y(TRIGON_TAIL(L)), T);  \
+			      TRIGON_SET_E(TRIGON_Y(L), T);     \
+                              U64 ( TRIGON_Z(L) )++;
+#define TRIGON_DEL_BACK(L)    Trigon TAIL = TRIGON_TAIL(L); \
+			      TRIGON_SET_E(TRIGON_Y(L), TRIGON_PREV(TAIL) ); \
+			      TRIGON_CLR_V(TRIGON_Y(TRIGON_PREV(TAIL)));   \
+			      TRIGON_CLR_V(TRIGON_X(TAIL));   \
+                              U64(TRIGON_Z(L))--;
+
+#define TRIGON_IS_EMPTY(T)    ( U64(TRIGON_Y(T)) && U64(TRIGON_X(T)) ) ? 0 : 1
+#define TRIGON_IS_SINGLE(T)   ( U64(TRIGON_Y(T)) == U64(TRIGON_X(T)) ) ? 1 : 0
+
+#define TRIGON_ADD_EMPTY(L,T) TRIGON_SET_E(TRIGON_X(L), T); TRIGON_SET_E(TRIGON_Y(L), T); U64(TRIGON_Z(L))++;
+#define TRIGON_DEL_LIST(L)    TRIGON_CLR_V(TRIGON_X(L)); TRIGON_CLR_V(TRIGON_Y(L)); U64(TRIGON_Z(L))--;
+#define TRIGON_PUSH(L,T)      if ( TRIGON_IS_EMPTY(L) ) { TRIGON_ADD_EMPTY(L,T) } else { TRIGON_ADD_BACK(L,T) }
+#define TRIGON_POP(L)         if ( !TRIGON_IS_EMPTY(L) ) { if (TRIGON_IS_SINGLE(L)) {TRIGON_DEL_LIST(L)} else {TRIGON_DEL_BACK(L)} } 
+ 
+
+
+
 
 // Reconginizer
 
@@ -296,11 +357,19 @@ NFA* initNFA(string x)
 // Main
 void run() 
 {
-    TRIGON L = TRIGON_MALLOC;
-    TRIGON x = TRIGON_MALLOC;
-    TRIGON_ADD_EMPTY(L, x);
-    TRIGON_HEXDUMP(L);
 
+    Trigon L = TRIGON_MALLOC;
+    Trigon A = TRIGON_MALLOC;
+    Trigon B = TRIGON_MALLOC;
+    
+    TRIGON_PUSH(L, A);
+    TRIGON_PUSH(L, B);
+    PRT_LIST(L);
+
+    //PRT_TRIGON(L);
+    //PRT_LIST(L);
+
+    
     //initNFA("a(b|c)");
 }
 

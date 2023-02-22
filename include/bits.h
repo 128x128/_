@@ -13,35 +13,40 @@ typedef unsigned char width;
 typedef __int128 int128_t;
 typedef unsigned __int128 uint128_t;
 
-#define RED             "\x1B[31m"
-#define GRN             "\x1B[32m"
-#define YEL             "\x1B[33m"
-#define BLU             "\x1B[34m"
-#define MAG             "\x1B[35m"
-#define CYN             "\x1B[36m"
-#define WHT             "\x1B[37m"
-#define RESET           "\x1B[0m"
 
-#define PRT_RED         printf(RED)
-#define PRT_GRN         printf(GRN)
-#define PRT_YEL         printf(YEL)
-#define PRT_BLU         printf(BLU)
-#define PRT_MAG         printf(YEL)
-#define PRT_CYN         printf(CYN)
-#define PRT_WHT         printf(WHT)
-#define PRT_RESET       printf(RESET)
+#define RED                   "\x1B[31m"
+#define LIM                   "\x1B[32m"
+#define YEL                   "\x1B[33m"
+#define BLU                   "\x1B[34m"
+#define MAG                   "\x1B[35m"
+#define CYN                   "\x1B[36m"
+#define WHT                   "\x1B[37m"
+#define GRN                   "\033[92m"
+#define LRED                  "\033[91m"
+#define RESET                 "\x1B[0m"
 
-#define PRT_SPACE       printf(" ")
-#define PRT_TAB         printf("\t")
-#define PRT_NEWLINE     printf("\n")
+#define PRT_RED               printf(RED)
+#define PRT_LRED              printf(LRED)
+#define PRT_GRN               printf(GRN)
+#define PRT_YEL               printf(YEL)
+#define PRT_BLU               printf(BLU)
+#define PRT_MAG               printf(YEL)
+#define PRT_CYN               printf(CYN)
+#define PRT_WHT               printf(WHT)
+#define PRT_LIM               printf(LIM)
+#define PRT_RESET             printf(RESET)
 
-#define CHAR_REPR(x)    (x<0x20||x>0x7E) ? 0x2E : x
-#define PRT_PTR(x)      PRT_RED; printf("%p",   x);                               PRT_RESET;
-#define PRT_HEX(x)      PRT_BLU; printf("%02x", *((unsigned char*)x));            PRT_RESET; 
-#define PRT_CHAR(x)     PRT_GRN; printf("%c",   CHAR_REPR(*((unsigned char*)x))); PRT_RESET; 
+#define PRT_SPACE             printf(" ")
+#define PRT_TAB               printf("\t")
+#define PRT_NL                printf("\n")
 
-#define PRT_BUFFER(x,n) for(int i=0;i<n;i++){ PRT_CHAR( ((unsigned char*)x+i) ); }  
-#define PRT_HEX_N(x,n)  for(int i=0;i<n;i++){ PRT_HEX ( ((unsigned char*)x+i) ); PRT_SPACE; }  
+
+#define PRT_BUFFER(x,n)       for(int i=0;i<n;i++){ PRT_CHAR( ((byte*)x+i) ); }  
+#define PRT_HEX_RANGE(x,n)    for(int i=0;i<n;i++){ PRT_HEX ( ((byte*)x+i) ); PRT_SPACE; }  
+#define PRT_HD_RANGE(x,n,m)   for(int j=0;j<m;j++){ PRT_HEXDUMP( ((byte*)x)+(j*n) ,n); PRT_NL; }
+#define PRT_HD_INDENT(x,n,m)  for(int j=0;j<m;j++){ PRT_TAB; PRT_HEXDUMP( ((byte*)x)+(j*n) ,n); PRT_NL; }
+
+#define PRT_HEXDUMP(x,n)      PRT_PTR(x); PRT_SPACE; PRT_HEX_RANGE(x,n); PRT_BUFFER(x,n);
 
 void space(){printf(" ");}
 void endl(){printf("\n");}
@@ -86,7 +91,7 @@ void rarrow(){printf(YEL " >> "RESET);}
 void larrow(){printf(YEL " << "RESET);}
 void prtBitsGrn(width n){for (int i=0;i<n;i++){printf(GRN"%d"RESET,bitBuffer[i]);}}
 void prtBitsRed(width n){for (int i=0;i<n;i++){printf(RED"%d"RESET,bitBuffer[i]);}}
-void prtbits(byte* x,width n){ldbits(x, n);prtBitsGrn(n);}
+void prtbits(void* x,width n){ldbits(x, n);prtBitsGrn(n);}
 void prtdb(byte* x,width n){prtbits(x+n/2,n/2);printf(" ");prtbits(x,n/2);}
 void bhd(byte* x,int n){for(int i=0;i<n;i++){hd(x+i,1);rarrow();prtbits(x+i,8);endl();}}
 
