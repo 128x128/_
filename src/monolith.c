@@ -1,6 +1,4 @@
-/*#include "../include/node.h"*/
-#include "../include/monolith.h"
-#include "../include/hash.h"
+#include "monolith.h"
 
 int main(int argc, char **argv) {
     if (argc == 2) execute(argv[1]);
