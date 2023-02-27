@@ -53,12 +53,12 @@ typedef enum REGEX_OP
 REGEX_OP;
 
 
-//Trigon transitionNFA(NFA x, NFA y, uint64_t s)
-//{
-    //Trigon t = TRIGON_MALLOC;
-    //TRIGON_SET(t,&x,&y,&s);
-    //return t;
-//}
+Trigon nfa_transition(NFA x, NFA y, hash64 symbol)
+{
+    Trigon t = TRIGON_MALLOC;
+    TRIGON_SET(t,&x,&y,&symbol);
+    return t;
+}
 //NFA alterationNFA(NFA x, NFA y) 
 //{
     //NFA G = TRIGON_MALLOC;
@@ -91,8 +91,19 @@ REGEX_OP;
     //return NULL;
 //}
 
+NFA nfa_symbol(hash64 symbol)
+{
+    Trigon G = TRIGON_MALLOC;
+    Trigon x = TRIGON_MALLOC;
+    Trigon y = TRIGON_MALLOC;
+    TRIGON_SET_X(G, &x);
+    TRIGON_SET_Y(G, &y);
+    nfa_transition(x,y,symbol);
+    return G;
+}
 
-string addSymbol(hashmap symbols, regexp x) 
+
+string addsymbol(hashmap symbols, string x) 
 {
     hash64 h = h64(x);
     if ( isfree_h( symbols, h) ) 
@@ -103,36 +114,43 @@ string addSymbol(hashmap symbols, regexp x)
     return (string)inspect_h(symbols, h);
 }
 
-string nextSymbol(string dst, string src) 
+string nxtsymbol(string src) 
 {
-    string x = src;
-    if    ( !x                ) { return x;                                             }
-    while ( *x&&!IS_SYMBOL(*x)) { x++;                                                  } 
-    if    ( !(*x)             ) { return strclr( dst );                                 }
-    if    ( IS_RANGE(*x)      ) { return strcpyn( dst, x, strnxt(x, R_RANGE) - x + 1 ); }
-    if    ( IS_SYMBOL(*x)     ) { return strcpyn( dst, x, 1 );                          }
+    if    ( src == NULL || *src == 0x00 ) { return NULL;                       }
+    while ( *src && !IS_SYMBOL(*src)    ) { src++;                             } 
+    if    ( *src == 0x00                ) { return NULL;                       }
+    return src;
+}
+
+string ldsymbol(string dst, string src) 
+{
+    src = nxtsymbol(src);
+    if    ( src && IS_RANGE(*src)       ) { return strcpyd( dst, src, R_RANGE);}
+    if    ( src && IS_SYMBOL(*src)      ) { return strcpyn( dst, src, 1 );     }
     return NULL;
 }
 
-Trigon loadSymbols(regexp x)
+Trigon ldsymbols(string x)
 {
-    hashmap     symbols = HASHMAP_ALLOC;
-    char        symbol[MAX_SYMBOL_LEN]; 
+    string  current = x;
+    hashmap symbols = HASHMAP_ALLOC;
+    string  symbol  = (string)calloc(1, MAX_SYMBOL_LEN);
 
-    while(x)
+    while(current)
     {
-	x = nextSymbol(&symbol[0], x);
-	addSymbol(symbols, &symbol[0]);
-	//PSTR(symbol);
-	//PNL;
+	current = ldsymbol(symbol, current);
+	if ( !current ) break;
+	addsymbol(symbols, symbol);
+	TRIGON_PUSH(symbols, nfa_symbol(symbol));
     }
+    free(symbol);
 
     return symbols;
 }
 
 NFA initNFA(regexp x)
 {
-    Trigon s = loadSymbols(x);
+    void* s = ldsymbols(x);
     //PLIST(s);
     
     //while(*x)

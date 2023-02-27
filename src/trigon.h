@@ -8,6 +8,8 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 typedef void*                 Trigon;
+typedef void*                 def;
+typedef void*                 ptr;
 
 
 #define TRIGON(_)             (*((void**)   _))
@@ -80,6 +82,41 @@ typedef void*                 Trigon;
                               if   ( TRIGON_IS_SINGLE(L) ) {                   \
 				     TRIGON_DEL_LIST(L)  }                     \
                               else { TRIGON_DEL_FRNT(L)  } } 
+// alloc ops
+def talloc()                  { return (Trigon)calloc(1,sizeof(void*)*3);  }
+
+//standard ops
+def tx(Trigon T)  { return T+0x00; }
+def ty(Trigon T)  { return T+0x08; }
+def tz(Trigon T)  { return T+0x10; }
+
+def tclrx(Trigon T)           { memset(tx(T),0x00,8);   return T;     }
+def tclry(Trigon T)           { memset(ty(T),0x00,8);   return T;     }
+def tclrz(Trigon T)           { memset(tz(T),0x00,8);   return T;     }
+def tsetx(Trigon T, ptr src)  { memcpy(tx(T),src, 8);   return T;     }
+def tsety(Trigon T, ptr src)  { memcpy(ty(T),src, 8);   return T;     }
+def tsetz(Trigon T, ptr src)  { memcpy(tz(T),src, 8);   return T;     }
+def tcpyx(Trigon T, ptr dst)  { memcpy(dst,tx(T), 8);   return T;     }
+def tcpyy(Trigon T, ptr dst)  { memcpy(dst,ty(T), 8);   return T;     }
+def tcpyz(Trigon T, ptr dst)  { memcpy(dst,tz(T), 8);   return T;     }
+
+def tclr(Trigon T)                   { tclrx(T); tclry(T);  return tclrz(T);   }
+def tset(Trigon T,ptr x,ptr y,ptr z) { setx(T,x);tsety(T,y);return tsetz(T,z); }
+
+// List ops
+def lnext(Trigon T) { return ty(T); }
+def lprev(Trigon T) { return tx(T); }
+def lhead(Trigon T) { return tx(T); }
+def ltail(Trigon T) { return ty(T); }
+
+def lempty(Trigon L)  { return ( U64(ty(L)) && U64(tx(L)) ) ? 0 : 1; }
+def lsingle(Trigon L) { return ( U64(ty(L)) == U64(tx(L)) ) ? 1 : 0; }
+def lset(Trigon L, Trigon T) { tsetx(T); tsety(T); }
+def ldel(Trigon L) { tclr(L); }
+def lpair(Trigon x, Trigon y) { tsetx(y, x); tsety(x, y); }
+def tpushback(Trigon L, Trigon T) { lpair(ltail(L), T) tsety(L, T);}
+def tpushfrnt(Trigon L, Trigon T) { lpair(T, lhead(L)) tsetx(L, T);}
+
 
 void push(Trigon L, void* x) 
 { 
