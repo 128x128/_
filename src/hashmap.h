@@ -15,34 +15,43 @@ typedef void**                hashmap;
 #define H32_MUL               0x5bd1e995
 #define H64_MUL               0x5bd1e9955bd1e995
 
-#define DELETE_H(k,h)         memset(ADDRESS_H(k,h),0,sizeof(void*))
-#define INSERT_H(k,h,x)       NOTFREE_H(k,h) ? ERROR : !*((int*)memcpy(ADDRESS_H(k,h),x,sizeof(void*)))
-#define ADDRESS_H(k,h)        h[k % HASHMAP_SIZE]
-#define INSPECT_H(k,h)        *(ADDRESS_H(k, h))
-#define NOTFREE_H(k,h)        INSPECT_H(k,h) ? true : false 
+#define HASHMAP_ALLOC         (hashmap)calloc(1, sizeof(void*) * HASHMAP_SIZE)
 
-#define EPSILON               0x00000000
-#define MLSTATUS(x)           (x ? RUNNING : (Monolith.status=ERROR)) 
-
-// hash
 hash32 h32(string key) 
 {
     // MurmurOAAT32 hash
-    uint32_t h = H32_BASE;
-    for (;*key;++key) {
-	h^=*key;h*=H32_MUL;h^=h>>15;
-    }
-    return h;
+    hash32 h = H32_BASE; for(;*key;++key) {h^=*key;h*=H32_MUL;h^=h>>15;} return h;
 }
 
 hash64 h64(string key) 
 {
     // MurmurOAAT64 hash
-    uint64_t h = H64_BASE;
-    for (;*key;++key) {
-	h^=*key;h*=H64_MUL;h^=h>>47;
-    }
-    return h;
+    hash64 h = H64_BASE; for(;*key;++key) {h^=*key;h*=H64_MUL;h^=h>>47;} return h;
 }
+
+hashmap address_h(hashmap H, hash64 h) {
+    return H + (h % HASHMAP_SIZE);
+}
+
+void* inspect_h(hashmap H, hash64 h) 
+{
+    return *address_h(H, h);
+}
+
+bool isfree_h(hashmap H, hash64 h) 
+{
+    return inspect_h(H, h) ? false : true;
+}
+
+bool insert_h(hashmap H, hash64 h, void* x) 
+{
+    return isfree_h(H, h) ? !*((int*)memcpy(address_h(H, h), &x, sizeof(void*))) : 1;
+}
+
+bool delete_h(hashmap H, hash64 h) 
+{
+    return memset(address_h(H, h),0,sizeof(void*));
+}
+
 
 #endif

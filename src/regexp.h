@@ -2,146 +2,151 @@
 #define REGEXP_H
 
 #include "hashmap.h"
+#include "trigon.h"
+#include "string.h"
 
-// Reconginizer
+////////////////////////////////////////////////////////////////////////////////
+//                            Reconginizer                                    //
+////////////////////////////////////////////////////////////////////////////////
+
+typedef char*               regexp;
+typedef void*               NFA;
 
 #define L_BRCKT             0x28
-#define R_BRCKT             0x29
+#define R_BRCKT             0x29 
 #define L_RANGE             0x5B
 #define R_RANGE             0x5D
+#define MAX_SYMBOL_LEN      4096
 
-#define IS_CLO(x)           (x == '*')
-#define IS_ALT(x)           (x == '|')
-#define IS_LBK(x)           (x == L_BRCKT)
-#define IS_RBK(x)           (x == R_BRCKT)
-#define IS_RAN(x)           (x == L_RANGE)
-#define IS_NUM(x)           (x >= '0' && x <= '9')
-#define IS_LOW(x)           (x >= 'a' && x <= 'z')
-#define IS_UPP(x)           (x >= 'A' && x <= 'Z')
-#define IS_SYM(x)           (IS_RAN(x) || IS_NUM(x) || IS_LOW(x) || IS_UPP(x))
+#define IS_CLOSURE(x)       (x == '*')
+#define IS_ALTERNATION(x)   (x == '|')
+#define IS_LBRACKET(x)      (x == L_BRCKT)
+#define IS_RBRACKET(x)      (x == R_BRCKT) 
+#define IS_RANGE(x)         (x == L_RANGE)
+#define IS_NUMBER(x)        (x >= '0' && x <= '9')
+#define IS_LOWER(x)         (x >= 'a' && x <= 'z')
+#define IS_UPPER(x)         (x >= 'A' && x <= 'Z')
+#define IS_SYMBOL(x)        ( IS_RANGE(x) || IS_NUMBER(x)                      \
+	                                  ||                                   \
+	                      IS_LOWER(x) || IS_UPPER(x) )
 
-#define INIT_NFA            (initPair(initList(), initList()))
-#define NFA_STRUCT(x)       ((NFA*)x->data)
-#define NFA_START(x)        ((state*)x->head)
-#define NFA_END(x)          ((state*)x->tail)
+#define EPSILON             0x00000000
 
-#define REGEX_CLO_CASE(x)   (IS_CLO(x) ? REGEX_CONCAT        : REGEX_CLOSURE)
-#define REGEX_ALT_CASE(x)   (IS_ALT(x) ? REGEX_CLO_CASE(x)   : REGEX_ALTERNATION)
-#define REGEX_CLOSE_CASE(x) (IS_RBK(x) ? REGEX_ALT_CASE(x)   : REGEX_CLOSE)
-#define REGEX_OPEN_CASE(x)  (IS_LBK(x) ? REGEX_CLOSE_CASE(x) : REGEX_OPEN)
-#define REGEX_CASE(x)       (IS_SYM(x) ? REGEX_OPEN_CASE(x)  : REGEX_SYMBOL)
+typedef enum CHARTYPE 
+{
+    REGEX_RANGE,
+    REGEX_SYMBOL,
+    REGEX_OPEN,
+    REGEX_CLOSE,
+    REGEX_ALTERNATION,
+    REGEX_CLOSURE,
+    REGEX_CONCAT,
+}
+CHARTYPE;
 
-hashmap SYMBOL_TABLE[HASHMAP_SIZE];
+typedef enum REGEX_OP 
+{
+    ALTERNATION,
+    CONCAT,
+    CLOSURE,
+}
+REGEX_OP;
 
-//enum regexType 
+
+//Trigon transitionNFA(NFA x, NFA y, uint64_t s)
 //{
-    //REGEX_SYMBOL,
-    //REGEX_OPEN,
-    //REGEX_CLOSE,
-    //REGEX_ALTERNATION,
-    //REGEX_CLOSURE,
-    //REGEX_CONCAT,
-//};
-
-//typedef enum regexTransform
-//{
-    //ALTERNATION,
-    //CONCAT,
-    //CLOSURE,
+    //Trigon t = TRIGON_MALLOC;
+    //TRIGON_SET(t,&x,&y,&s);
+    //return t;
 //}
-//regexTransform;
-
-//idx nextOccurance(string x, byte c) 
+//NFA alterationNFA(NFA x, NFA y) 
 //{
-    //string y = x;
-    //while(*y++!=c){}
-    //return y-x;
-//}
-
-//regexTransform regexStatus = CONCAT;
-//NFA* currNFA = NULL;
-//NFA* prevNFA = NULL;
-
-//NFA* alterationNFA(NFA* x, NFA* y) 
-//{
-    //NFA*  G = INIT_NFA;
-    //initTransition(NFA_START(G), NFA_START(x), EPSILON);
-    //initTransition(NFA_START(G), NFA_START(x), EPSILON);
-    //initTransition(NFA_END(x), NFA_END(G), EPSILON);
-    //initTransition(NFA_END(y), NFA_END(G), EPSILON);
+    //NFA G = TRIGON_MALLOC;
+    //transitionNFA(G,x,EPSILON);
+    //transitionNFA(G,y,EPSILON);
     //return G;
 //}
 
-//NFA* concatNFA(NFA* x, NFA* y) 
+//NFA concatNFA(NFA x, NFA y) 
 //{
-    //NFA* G = INIT_NFA;
-    //initTransition(NFA_START(G), NFA_START(x), EPSILON);
-    //initTransition(NFA_END(y), NFA_END(G), EPSILON);
+    //NFA G = TRIGON_MALLOC;
+    //transitionNFA(x,y,EPSILON);
     //return G;
 //}
 
-//NFA* closureNFA(NFA* x) 
+//NFA closureNFA(NFA* x) 
 //{
-    //NFA* G = INIT_NFA;
-    //initTransition(NFA_END(x), NFA_START(x), EPSILON);
-    //initTransition(NFA_START(G), NFA_END(G), EPSILON);
+    //NFA G = TRIGON_MALLOC;
     //return G;
 //}
 
-//NFA* constructNFA() 
+//NFA constructNFA(NFA x, NFA y, REGEX_OP z) 
 //{
-    //switch(regexStatus) 
+    //swtich(z) 
     //{
-	//case CONCAT:      currNFA = concatNFA(prevNFA, currNFA);
-			  //break; 
-	//case ALTERNATION: currNFA = alterationNFA(prevNFA, currNFA); 
-			  //break; 
-	//case CLOSURE:     currNFA = closureNFA(currNFA);
-			  //break; 
-	//default:          break;  
-    //}
-    //return currNFA;
-//}
-
-//string nextSymbol(string x) 
-//{
-    //while (IS_SYM(*x++)==0){}
-    //NFA*         G = INIT_NFA;
-    //idx          n = (IS_RAN(*x) ? nextOccurance(x, R_RANGE) : 1);
-    //string symbol = (string)calloc(n+1, 1); memcpy(symbol, x, n);
-    //INSERT_H(h64(symbol), &SYMBOL_TABLE, symbol);
-    //initTransition(NFA_START(G), NFA_END(G), h64(symbol));
-
-    //prevNFA = currNFA;
-    //currNFA = G;
-    //constructNFA();
-
-    //return x + n;
-//}
-
-
-//NFA* initNFA(string x)
-//{
-    //while(*x)
-    //{
-	//switch(REGEX_CASE(*x)) 
-	//{
-	    //case REGEX_SYMBOL:      x            = nextSymbol(x);  
-				    //break;
-	    //case REGEX_OPEN:        currNFA = initNFA(++x); 
-				    //break;
-	    //case REGEX_ALTERNATION: regexStatus  = ALTERNATION; 
-				    //break;
-	    //case REGEX_CLOSURE:     regexStatus  = CLOSURE;
-				    //break;
-	    //case REGEX_CONCAT:      regexStatus  = CONCAT;
-				    //break;
-	    //case REGEX_CLOSE:       return NULL;
-	    //default:                regexStatus  = CONCAT;
-				    //x++;
-	//}
+	//case ALTERNATION: return alterationNFA(x, y);
+	//case CONCAT:      return concatNFA(x, y);
+	//case CLOSURE:     return closureNFA(x, y);
     //}
     //return NULL;
 //}
+
+
+string addSymbol(hashmap symbols, regexp x) 
+{
+    hash64 h = h64(x);
+    if ( isfree_h( symbols, h) ) 
+    {
+	string symbol = strallocn(x, strlen(x));
+	insert_h( symbols, h, symbol );
+    }
+    return (string)inspect_h(symbols, h);
+}
+
+string nextSymbol(string dst, string src) 
+{
+    string x = src;
+    if    ( !x                ) { return x;                                             }
+    while ( *x&&!IS_SYMBOL(*x)) { x++;                                                  } 
+    if    ( !(*x)             ) { return strclr( dst );                                 }
+    if    ( IS_RANGE(*x)      ) { return strcpyn( dst, x, strnxt(x, R_RANGE) - x + 1 ); }
+    if    ( IS_SYMBOL(*x)     ) { return strcpyn( dst, x, 1 );                          }
+    return NULL;
+}
+
+Trigon loadSymbols(regexp x)
+{
+    hashmap     symbols = HASHMAP_ALLOC;
+    char        symbol[MAX_SYMBOL_LEN]; 
+
+    while(x)
+    {
+	x = nextSymbol(&symbol[0], x);
+	addSymbol(symbols, &symbol[0]);
+	//PSTR(symbol);
+	//PNL;
+    }
+
+    return symbols;
+}
+
+NFA initNFA(regexp x)
+{
+    Trigon s = loadSymbols(x);
+    //PLIST(s);
+    
+    //while(*x)
+    //{
+	//switch (chartype(*x)) 
+	//{
+	    //case REGEX_SYMBOL: PUSH(G, initSymbol(x)); break;
+	    //case REGEX_OPEN:   PUSH(G, initNFA(x)); break;
+	    //case REGEX_CLOSE:  return G;
+	    //default: break;
+	//}
+	
+    //}
+    return NULL;
+}
 
 #endif
